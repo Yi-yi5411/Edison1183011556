@@ -1,0 +1,90 @@
+{
+  "ocr": {
+    "provider": "paddle",
+    "lang": "ch",
+    "model": "ch_PP-OCRv4",
+    "use_gpu": true,
+    "pdf_dpi": 300,
+    "low_conf_threshold": 0.85,
+    "device": "auto"
+  },
+  "llm": {
+    "provider": "ollama",
+    "base_url": "http://localhost:11434/v1",
+    "api_key": "",
+    "model": "qwen3.6:35b",
+    "temperature": 0.0,
+    "timeout": 300,
+    "max_tokens": 8192,
+    "use_vision": "auto",
+    "vision_model": "qwen3.6:35b",
+    "vision_retries": 1,
+    "ollama_base_url": "http://172.16.42.7:11434",
+    "disable_thinking": true,
+    "classify_max_chars": 2000
+  },
+  "storage": {
+    "document_dir": "original_record/scanned",
+    "database_path": "data/scan_recognition.db",
+    "documents_table": "scan_documents",
+    "records_table": "scan_records"
+  },
+  "normalizer": {
+    "trim": true,
+    "collapse_ws": true,
+    "min_plausible_mm": 10,
+    "plausible_ranges": {},
+    "remove_units_in_fields": [
+      "强度推定值",
+      "芯样直径",
+      "截面积",
+      "测试荷载",
+      "测试强度",
+      "推定值",
+      "批评定值",
+      "碳化深度",
+      "平均回弹值"
+    ]
+  },
+  "agent": {
+    "enabled": true,
+    "max_repair_rounds": 2
+  },
+  "memory": {
+    "enabled": true,
+    "max_hints": 8,
+    "session_cache": true
+  },
+  "matcher": {
+    "computed_columns": [
+      "平均回弹值",
+      "截面积",
+      "测试强度",
+      "推定值",
+      "批评定值",
+      "芯样强度均值",
+      "测区1",
+      "测区2",
+      "测区3",
+      "测区4",
+      "测区5",
+      "测区6",
+      "测区7",
+      "测区8",
+      "测区9",
+      "测区10"
+    ],
+    "fuzzy_match": true
+  },
+  "server": {
+    "enabled": false,
+    "base_url": "",
+    "api_key": "",
+    "auth_header": "Authorization",
+    "auth_prefix": "Bearer ",
+    "upload_endpoint": "/scan_records/upload",
+    "field_mapping": {},
+    "timeout": 30,
+    "dry_run": true
+  }
+}

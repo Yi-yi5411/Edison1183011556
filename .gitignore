@@ -1,0 +1,33 @@
+# ── Python ──
+__pycache__/
+*.pyc
+.venv*/
+venv/
+
+# ── 打包产物 ──
+build/
+dist/
+*.spec.bak
+
+# ── 数据库 / 真实检测数据（不入库）──
+*.db
+*.sqlite
+data/
+original_record/
+*.sql
+*.doc
+
+# ── 模型 / 大文件 ──
+*.gguf
+*.onnx
+*.bin
+
+# ── 日志 / 调试输出 ──
+*.log
+headers_dump.txt
+notes_dump.txt
+
+# ── IDE / 工具 ──
+.trae/
+.idea/
+.vscode/
