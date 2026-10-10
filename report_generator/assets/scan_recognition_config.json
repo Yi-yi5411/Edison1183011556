@@ -50,6 +50,15 @@
     "enabled": true,
     "max_repair_rounds": 2
   },
+  "report_agent": {
+    "enabled": true,
+    "base_url": "",
+    "model": "",
+    "max_rounds": 24,
+    "timeout": 180,
+    "num_predict": 1024,
+    "temperature": 0.2
+  },
   "memory": {
     "enabled": true,
     "max_hints": 8,
@@ -86,5 +95,8 @@
     "field_mapping": {},
     "timeout": 30,
     "dry_run": true
+  },
+  "ui": {
+    "theme": "light"
   }
 }

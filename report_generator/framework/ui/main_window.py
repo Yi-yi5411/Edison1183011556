@@ -28,7 +28,7 @@ from framework.ui.delegates import FloorLabelDelegate
 from framework.ui.panels import NotesPanel, TreePanel, SheetTabsBar
 from framework.ui.grouped_header import GroupedHeaderView
 from framework.ui.theme import (
-    DEFAULT_FONT, FONT_SIZE, GLOBAL_STYLESHEET,
+    DEFAULT_FONT, FONT_SIZE, apply_theme, get_saved_theme, save_theme,
 )
 from modules.concrete_strength.handlers import CoreDrillingMixin
 from modules.steel_rebar.handlers import SteelRebarMixin
@@ -239,6 +239,8 @@ MENUBAR_STRUCTURE = [
         ("action", "导入外部数据（回弹法）...", "_import_rebound_data", ()),
         ("action", "Word 转回弹 Excel...", "_word_to_excel", ()),
         ("separator",),
+        ("action", "规范问答...", "_open_norm_qa", ()),
+        ("action", "批量审查...", "_open_batch_review", ()),
         ("action", "文档扫描识别...", "_open_scan_recognition", ()),
         ("action", "识别记录查看...", "_open_scan_history", ()),
         ("separator",),
@@ -321,6 +323,9 @@ MENUBAR_STRUCTURE = [
         ("action", "批量修改", "_batch_modify", ()),
     ]),
     ("submenu", "视图(&V)", [
+        ("action", "浅色主题（Fluent）", "_theme_light", ()),
+        ("action", "深色主题（Fluent）", "_theme_dark", ()),
+        ("separator",),
         ("action", "冻结窗格", "_freeze_panes", ()),
         ("separator",),
         ("action", "全选检测项目", "_tree_select_all", ()),
@@ -353,7 +358,7 @@ class ReportGeneratorApp(CoreDrillingMixin, SteelRebarMixin,
         self.structure_type = structure_type
         self.app = QApplication.instance() or QApplication(sys.argv)
         self.app.setFont(DEFAULT_FONT)
-        self.app.setStyleSheet(GLOBAL_STYLESHEET)
+        apply_theme(self.app, get_saved_theme())  # Fluent 风格主题（浅/深可切换）
 
         # ── 应用与主窗口图标（标题栏 + 任务栏显示）──
         # 所有静态资源集中存放在 <项目根>/report_generator/assets/ 下，
@@ -1577,6 +1582,34 @@ class ReportGeneratorApp(CoreDrillingMixin, SteelRebarMixin,
         self.sheet_data[self.current_item] = new_data
         self._load_item(self.current_item)
         self._status(f"已导入 {len(imported)} 行回弹法数据")
+
+    # ── 主题切换（Fluent 浅色/深色）──
+    def _theme_light(self):
+        self._apply_theme("light")
+
+    def _theme_dark(self):
+        self._apply_theme("dark")
+
+    def _apply_theme(self, name):
+        """应用主题并持久化，状态栏反馈。"""
+        from framework.ui.theme import apply_theme as _apply
+        theme = _apply(self.app, name)
+        save_theme(theme)
+        label = "浅色" if theme == "light" else "深色"
+        self._status(f"已切换为{label}主题（Fluent 风格）")
+
+    def _open_norm_qa(self):
+        """打开规范条文问答对话框（条号精确/自然语言检索 + AI 解释）。"""
+        from framework.ui.norm_qa_dialog import NormQADialog
+        dlg = NormQADialog(self.win)
+        dlg.exec_()
+
+    def _open_batch_review(self):
+        """打开批量审查对话框（报告分块提取审查候选 + 规范依据 + 导出 Word）。"""
+        from framework.ui.batch_review_dialog import BatchReviewDialog
+        dlg = BatchReviewDialog(self.win,
+                                project_name=self.project_name.strip())
+        dlg.exec_()
 
     def _open_scan_recognition(self):
         """打开文档扫描识别对话框（第1~8步流水线）。"""
