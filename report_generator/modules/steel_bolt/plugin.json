@@ -1,0 +1,94 @@
+{
+  "schema": "structural.item/1",
+  "id": "steel_bolt",
+  "name": "钢结构高强度螺栓连接副检测",
+  "structure_type": "钢结构",
+  "tree_order": 40,
+  "source": "python",
+  "items": [
+    {
+      "key": "高强度螺栓扭矩系数检测",
+      "columns_key": "高强度螺栓扭矩系数检测",
+      "family": "record_check",
+      "description": "钢结构高强度螺栓连接副检测 · 高强度螺栓扭矩系数检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "螺栓编号",
+        "螺栓规格",
+        "连接部位及名称",
+        "螺栓直径(mm)",
+        "施拧扭矩(N·m)",
+        "预拉力(kN)",
+        "扭矩系数",
+        "结论",
+        "备注"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {
+        "8": {
+          "type": "cond_conclusion",
+          "conditions": [
+            {
+              "col": 7,
+              "op": ">=",
+              "value": 0.11
+            },
+            {
+              "col": 7,
+              "op": "<=",
+              "value": 0.15
+            }
+          ],
+          "conclusion_pass": "符合要求",
+          "conclusion_fail": "不符合要求"
+        }
+      },
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "高强度螺栓扭矩系数检测"
+          }
+        ]
+      },
+      "equipment": [
+        "高强螺栓扭矩系数测定仪"
+      ],
+      "original_record": {
+        "template": "builtin_generic"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "高强度螺栓扭矩系数检测"
+      },
+      "skill": {
+        "slug": "steel-bolt-torque",
+        "description": "钢结构高强度螺栓连接副检测 · 高强度螺栓扭矩系数检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「高强度螺栓扭矩系数检测」数据时。"
+      },
+      "assessment": {
+        "spec": "steel_bolt_torque",
+        "family": "record_check",
+        "input": "sheet_rows"
+      }
+    }
+  ]
+}

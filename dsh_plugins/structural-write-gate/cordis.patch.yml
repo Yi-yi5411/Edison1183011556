@@ -1,0 +1,4 @@
+# 激活本插件（tools/pre-execute 写操作审批门禁）
+- insert:
+    - id: dsh-structural-write-gate
+      name: dsh-structural-write-gate

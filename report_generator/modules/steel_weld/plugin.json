@@ -1,0 +1,76 @@
+{
+  "schema": "structural.item/1",
+  "id": "steel_weld",
+  "name": "钢结构焊缝质量检测",
+  "structure_type": "钢结构",
+  "tree_order": 30,
+  "source": "python",
+  "items": [
+    {
+      "key": "焊缝超声波探伤检测",
+      "columns_key": "焊缝超声波探伤检测",
+      "family": "record_check",
+      "description": "钢结构焊缝质量检测 · 焊缝超声波探伤检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "焊缝编号",
+        "焊缝位置及名称",
+        "焊缝形式",
+        "母材厚度(mm)",
+        "探伤等级",
+        "缺陷指示长度(mm)",
+        "等级评定",
+        "结论",
+        "备注"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "float",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "calc_rules": {},
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "焊缝超声波探伤检测"
+          }
+        ]
+      },
+      "equipment": [
+        "超声波探伤仪"
+      ],
+      "original_record": {
+        "template": "builtin_generic"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "焊缝超声波探伤检测"
+      },
+      "skill": {
+        "slug": "steel-weld-ut",
+        "description": "钢结构焊缝质量检测 · 焊缝超声波探伤检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「焊缝超声波探伤检测」数据时。"
+      },
+      "assessment": {
+        "spec": "weld_ut",
+        "family": "record_check",
+        "input": "sheet_rows"
+      }
+    }
+  ]
+}

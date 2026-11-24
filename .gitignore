@@ -8,6 +8,7 @@ venv/
 build/
 dist/
 *.spec.bak
+*.zip
 
 # ── 数据库 / 真实检测数据（不入库）──
 *.db
@@ -16,6 +17,7 @@ data/
 original_record/
 *.sql
 *.doc
+report_generator/exports/
 
 # ── 模型 / 大文件 ──
 *.gguf
@@ -26,8 +28,18 @@ original_record/
 *.log
 headers_dump.txt
 notes_dump.txt
+data/logs/
+data/audit/
+
+# ── 归档（临时/调试/旧产物）──
+_archive/
+
+# ── AI 内核运行时（体积巨大，不入库）──
+deepseek-harness/
+dsh_plugins/**/node_modules/
 
 # ── IDE / 工具 ──
 .trae/
 .idea/
 .vscode/
+git-error-*

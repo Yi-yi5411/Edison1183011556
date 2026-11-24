@@ -1,0 +1,74 @@
+{
+  "schema": "structural.item/1",
+  "id": "wood_defect",
+  "name": "木结构构件缺陷检测",
+  "structure_type": "木结构",
+  "tree_order": 30,
+  "source": "python",
+  "items": [
+    {
+      "key": "木构件缺陷检测",
+      "columns_key": "木构件缺陷检测",
+      "family": "record_check",
+      "description": "木结构构件缺陷检测 · 木构件缺陷检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件编号",
+        "构件位置及名称",
+        "缺陷类型",
+        "缺陷位置",
+        "缺陷程度",
+        "缺陷尺寸(mm)",
+        "处理建议",
+        "备注"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "string",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {},
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "木构件缺陷检测"
+          }
+        ]
+      },
+      "equipment": [
+        "钢直尺"
+      ],
+      "original_record": {
+        "template": "builtin_generic"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "木构件缺陷检测"
+      },
+      "skill": {
+        "slug": "wood-defect",
+        "description": "木结构构件缺陷检测 · 木构件缺陷检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「木构件缺陷检测」数据时。"
+      },
+      "assessment": {
+        "spec": "wood_defect",
+        "family": "record_check",
+        "input": "sheet_rows"
+      }
+    }
+  ]
+}

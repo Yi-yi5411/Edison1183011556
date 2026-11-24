@@ -1,6 +1,26 @@
-# 主体结构检测数据管理录入系统V1.0
+# 工程检测harness
 
 > 一款专业的建筑结构检测数据管理与报告生成工具，基于 **PyQt5** 提供 Excel 风格的数据编辑体验，采用 **五层分离 + 插件化** 架构，新增检测项目无需修改主框架代码。
+>
+> **Web 版 = 自研 DSH 风格工作台 + 本机 DSH ACP 智能体**：`/harness` 是对话入口，左侧工程/最近会话、
+> 中间对话与轨迹、右侧当前工程工作区（报告/原始记录/附件/快照，不遍历源码）；后端把浏览器 WebSocket 桥到本机 DSH ACP（stdio JSON-RPC），保留流式消息/
+> 计划/工具/审批/取消能力。`/dsh` 仍保留原生 DSH 整页作为排障与回退入口。
+> Vue 端负责数据采集、评定、报告与记录库；109 个 MCP 工具、29 个检测项目技能。
+> 会话可持久化并带工程长期记忆；对话回合由后端常驻执行，后台运行、可排队、可切走继续、刷新/断线续显、可停止；
+> 图片/PDF 上传后走项目 PaddleOCR 与表格识别，确认检测项目/目标表/参数后写入，并只勾选本次识别项、自动评定，可直接生成报告草稿；
+> 表格/Word 表格上传后先识别检测项目、构件与采集参数，用户确认/校正后导入并自动评定；
+> 未勾选但有数据的项目也会纳入报告，报告页可选“草稿：仅生成已就绪项”，跳过项会列出原因；
+> 已勾选检测项可拆成并行评定任务，全部完成后统一写回，见
+> [docs/会话持久化与并行任务.md](docs/会话持久化与并行任务.md)；上传识别确认、自动评定与草稿报告见
+> [docs/上传导入与草稿报告.md](docs/上传导入与草稿报告.md)。
+> 文档扫描识别优先使用项目内 CUDA GPU OCR 服务（PaddleOCR 3.x + PaddlePaddle 3.3.1 cu129，RTX 5090），
+> 服务不可用时自动回退项目内 PaddleOCR 2.8 CPU（PP-OCRv4 模型在 `data/models/paddleocr`，不依赖用户目录缓存）；
+> 安装、启动与校验见 [docs/PaddleOCR项目内配置.md](docs/PaddleOCR项目内配置.md)。
+> 搭配技能 `structural-workflow` 覆盖“加载采集 → 录入 → 评定 → 生成 → 预览 → 修改报告”全流程，
+> 见 [docs/DSH源码改造.md](docs/DSH源码改造.md)。
+> 品牌资源：Web 用 `webapp/frontend/public/brand/logo.svg`，桌面用 `report_generator/assets/logo.jpg` 与 `desktop/app.ico`。
+> 详见 [webapp/README.md](webapp/README.md)、[webapp/API_CONTRACT.md](webapp/API_CONTRACT.md)
+> 与 [docs/HARNESS_AGENT_ARCHITECTURE.md](docs/HARNESS_AGENT_ARCHITECTURE.md)。
 
 ---
 
@@ -13,6 +33,7 @@
 - [内置插件一览](#内置插件一览)
 - [自动计算规则](#自动计算规则)
 - [快速开始](#快速开始)
+- [工程化与自检](#工程化与自检)
 - [快捷键说明](#快捷键说明)
 - [扩展开发：插件化指南](#扩展开发插件化指南)
 - [项目结构](#项目结构)
@@ -424,10 +445,10 @@ pip install PyQt5
 
 ```bash
 cd structural_inspection
-python report_generator/main.py
+python run.py
 ```
 
-启动后会先弹出登录窗口。首次运行会自动导入 `user_mobile_1029.sql` 中的用户，
+启动后会先弹出登录窗口。首次运行会自动导入 `desktop/user_mobile_1029.sql` 中的用户，
 可使用「手机号 / 用户名」登录，密码默认为手机号；管理员账户为 `admin`，密码 `admin123`。
 
 ### 使用流程
@@ -439,7 +460,83 @@ python report_generator/main.py
 5. **合并/格式**：选中区域 Ctrl+M 合并，工具栏设置粗体/对齐/颜色，格式刷一键复制格式
 6. **保存项目**：菜单「文件 → 保存项目」导出 `.json`，下次可一键还原所有表格与合并
 7. **导出 Excel**：Ctrl+S 或菜单「文件 → 导出 Excel」，生成多 Sheet 报告
-8. **Word 转回弹 Excel**：菜单「文件 → Word 转回弹 Excel」，将省检测中心回弹记录 `.doc` 转换为恩施格式 `.xlsx`
+8. **Word 转回弹 Excel**：菜单「文件 → Word 转回弹 Excel」，将 `data/samples/省检测中心回弹记录.doc` 转换为恩施格式 `.xlsx`
+
+---
+
+## 工程化与自检
+
+### 一键自检
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check.ps1
+```
+
+- 跑 21 个测试套件（系统 Python 3.8 + `.venv` 3.14，缺少 `.venv` 时自动跳过）；
+- 校验 manifest（`structural_items validate`、`build_manifests --check`）；
+- 统计 MCP 工具面（当前 109）；
+- 检查清单：临时目录残留、UTF-8 输出（cp936 控制台下 Python 3.8 会崩）；
+- 全绿退出码 0，耗时约 1 分钟。`-SkipVenv` 可只跑 3.8。
+
+### 测试
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check.ps1
+python tests\test_report_facts.py          # 单个套件
+```
+
+- 23 个套件在 `tests/`，共用 `tests/_harness.py`（路径引导、UTF-8 输出、断言汇总）；
+- `tests/legacy/` 是桌面端旧冒烟（需要 PyQt5 / 会改真实工程），不进入自检；
+- 约定见 [tests/README.md](tests/README.md)。
+
+### 发布与日志
+
+```powershell
+.\scripts\release.ps1 -Version 1.0.1 -Note "本次变更"   # 改版本号 + 写 CHANGELOG + 自检 + 打 zip
+.\scripts\release.ps1 -Version 1.0.1 -DryRun           # 只显示将做什么，不改文件
+```
+
+- 版本号唯一来源：`config/structural.toml [app].version`（`/api/health`、`/api/system/info` 同源）；
+- 产物：`dist/structural_inspection-<版本>.zip`（不含 `data/`、`node_modules/`、`__pycache__`）；
+- 访问日志：`data/logs/backend.jsonl`，每个 `/api` 请求一行（`request_id`、方法、路径、
+  参数名、状态、耗时、工程名），`STRUCTURAL_ACCESS_LOG=off` 可关闭，超 10MB 轮转；
+- 响应头 `X-Request-ID` 可透传，便于把后端日志与 DSH 侧调用对上。
+
+### 安装与配置
+
+```powershell
+.\install.ps1        # 依赖、配置、数据目录、AutoCAD/探索者/盈建科环境检查、MCP 片段
+.\start-backend.ps1  # 起后端（端口读配置，前台运行）
+.\start-backend.ps1 -Detach  # 后台常驻；日志 data/logs/backend.out.log / backend.err.log
+```
+
+配置统一在 `config/structural.toml`：
+
+| 段 | 内容 |
+|---|---|
+| `[app]` | 版本号（`/api/health`、`/api/system/info` 同源） |
+| `[server]` | host / port / api_base |
+| `[dsh]` | DSH GUI 地址、MCP 服务名 |
+| `[cad]` | AutoCAD / 探索者路径、后端（auto/com/dxf）、字高与轴号 |
+| `[yjk]` | 盈建科安装目录、自带 Python、工作目录与超时 |
+
+环境变量优先（`STRUCTURAL_*`，见 `webapp/structural_config.py`）。
+
+### 外部集成（独立 MCP 服务）
+
+| 服务 | 片段 | 说明 |
+|---|---|---|
+| AutoCAD / 探索者 | `cad_agent/dsh-patch.yml` | serverName `autocad`，12 个工具；无 AutoCAD 自动回退 DXF |
+| 盈建科 YJK | `integrations/yjk/dsh-patch.yml` | serverName `yjk`，4 个工具；脚本交给 YJK 自带 Python 3.10 |
+
+文档：[CAD 与结构计算集成](docs/CAD与结构计算集成.md)。
+
+### 主要文档
+
+- [Harness 架构](docs/HARNESS_AGENT_ARCHITECTURE.md) · [人机协同与安全门](docs/人机协同与安全门.md)
+- [报告事实与措辞](docs/报告事实与措辞.md) · [记录库检索与复用](docs/记录库检索与复用.md)
+- [检测项目 MANIFEST](docs/检测项目MANIFEST.md) · [规范库导入与检索](docs/规范库导入与检索.md)
+- [变更记录](CHANGELOG.md)
 
 ---
 
@@ -704,17 +801,41 @@ structural_inspection/
 │       ├── openpyxl/
 │       └── openpyxl-3.1.5.dist-info/
 │
-├── 模板库/                                # 业务模板参考（表头、格式）
-│   ├── 1、混凝土抗压强度检测/
-│   ├── 2、钢筋配置/
-│   └── ...
-├── 需求逻辑提示词/                        # 需求文档与示例数据
-└── README.md                              # 本文件
+├── desktop/                              # 桌面端独立套件：登录/功能主页/账号库/图标/种子用户
+│   └── __init__.py                       #   report_generator/main.py 与 run.py 从这里启动
+│
+├── webapp/                               # Web 版：FastAPI 后端 + Vue 前端 + MCP Server
+│   ├── backend/                          #   路由、会话、记录库桥、访问日志
+│   ├── frontend/                         #   Vue 工作台（dist 为构建产物）
+│   ├── mcp_server.py                     #   主 MCP（109 个工具）
+│   └── mcp_tools_extra.py                #   扩展工具定义
+│
+├── cad_agent/                            # AutoCAD / 探索者：绘图库 + MCP 服务（12 工具）
+├── integrations/yjk/                     # 盈建科 YJK：建模/读数桥 + MCP 服务（4 工具）
+│
+├── tests/                                # 回归测试（23 个套件，tests/legacy 为桌面端旧冒烟）
+├── scripts/                              # check.ps1（一键自检）/ release.ps1（发布）
+├── config/structural.toml                # 版本、端口、CAD、YJK 配置
+├── docs/                                 # 架构 / 集成 / 规范 / 记录库文档（references 存外部资料）
+├── prompt/                               # 13 份评定提示词（MCP 资源）
+├── report_template/                      # 报告章节模板
+├── manual_assets/                        # 文档截图
+├── tools/                                # 7z / upx（打包用）
+├── data/                                 # 运行时数据（不入库）
+├── install.ps1 / start-backend.ps1       # 安装检查 / 启动后端
+├── requirements*.txt                     # 依赖（桌面 / Web / 测试）
+└── README.md                             # 本文件
 ```
+
+详见 [docs/项目结构.md](docs/项目结构.md)。
 
 ---
 
 ## 更新说明
+
+> 最新变更（P0–P8：运行时收敛、工具面、检测项目插件化、四个库、报告事实/措辞、人机协同、CAD/YJK、工程化）
+> 见 [CHANGELOG.md](CHANGELOG.md)；当前版本见 `config/structural.toml [app].version`。
+> 以下 v3.0.0 为桌面版历史记录。
 
 ### v3.0.0 (2026-08-14)
 

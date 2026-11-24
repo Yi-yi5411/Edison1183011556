@@ -142,8 +142,13 @@ class AppController:
     @staticmethod
     def serialize(project_name, sheet_data, merges, merge_formats,
                   cell_formats, cd_params, operation_notes=None,
-                  checked_items=None, report_info=None):
-        """将项目状态序列化为可 JSON 化的字典。"""
+                  checked_items=None, report_info=None,
+                  template_selection=None, assessment=None):
+        """将项目状态序列化为可 JSON 化的字典。
+
+        template_selection 为 Web 版新增的可选项（报告/原始记录模板选择），
+        旧调用方不传时写空对象，不影响桌面版反序列化。
+        """
         return {
             "project_name": project_name,
             "data": sheet_data,
@@ -160,6 +165,8 @@ class AppController:
             "operation_notes": operation_notes or {},
             "checked_items": checked_items or [],
             "report_info": report_info or {},
+            "template_selection": template_selection or {},
+            "assessment": assessment or {},
         }
 
     @staticmethod

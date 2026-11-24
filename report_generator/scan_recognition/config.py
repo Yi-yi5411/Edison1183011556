@@ -32,7 +32,24 @@ _DEFAULTS = {
         "provider": "paddle",         # paddle | mock
         "lang": "ch",
         "model": "ch_PP-OCRv4",       # PaddleOCR 检测+识别模型
-        "use_gpu": True,              # 无GPU会自行回退到CPU
+        # 模型目录随项目走（data/ 下，部署时一起拷贝），不依赖用户目录缓存。
+        # 相对路径按项目根解析；目录不存在时回退 PaddleOCR 自带下载缓存。
+        "det_model_dir": "data/models/paddleocr/det",
+        "rec_model_dir": "data/models/paddleocr/rec",
+        "cls_model_dir": "data/models/paddleocr/cls",
+        # 本机 PaddleOCR 2.8/CPU 的回退开关；GPU 优先走下面的独立服务。
+        "use_gpu": False,
+        # PaddleOCR 3.x + CUDA 12.9 的独立 GPU 服务（主程序为 Python 3.8，
+        # 官方 cu129 wheel 没有 cp38，所以用 Python 3.12 子进程）。
+        # 留空则完全走本机 PaddleOCR（CPU）；服务不可用时自动回退 CPU。
+        "gpu_service_url": "http://127.0.0.1:8770",
+        "gpu_service_timeout": 180,
+        "gpu_service_autostart": True,
+        "gpu_service_python": ".venv-ocr-gpu/Scripts/python.exe",
+        "gpu_service_script": "scripts/ocr_gpu_service.py",
+        "gpu_service_cache_dir": "data/models/paddlex",
+        "gpu_det_model": "PP-OCRv5_mobile_det",
+        "gpu_rec_model": "PP-OCRv5_mobile_rec",
         "pdf_dpi": 300,               # PDF 转图片的分辨率
         "low_conf_threshold": 0.85,   # OCR 置信度低于该值的单元格提示人工复核
         "device": "auto",             # 原文：文件来源标注（扫描/拍照）
@@ -94,15 +111,20 @@ _DEFAULTS = {
         "enabled": True,          # False=关闭自修复（识别照常，仅提示复核）
         "max_repair_rounds": 2,   # 最大修复轮数（每轮重问一次视觉模型）
     },
-    # ── 报告生成 LLM 代理（Ollama 工具调用，逐步编排 utils/report_tools）──
-    "report_agent": {
-        "enabled": True,          # False=报告生成不接入 LLM（始终直接生成）
-        "base_url": "",           # Ollama 原生地址；留空=沿用 llm.ollama_base_url / base_url 推导
-        "model": "",              # 工具调用模型；留空=自动探测 capabilities 含 tools 的模型（qwen 优先）
-        "max_rounds": 24,         # 工具循环最大轮数（防失控）
-        "timeout": 180,           # 单次 /api/chat 超时（秒）
-        "num_predict": 1024,      # 单次输出 token 上限
-        "temperature": 0.2,       # 工具编排用低随机性
+    # ── Harness 会话助手（启动预演 / 对话 / 工具编排；本地优先）──
+    "harness": {
+        "enabled": True,
+        # auto=本地 vLLM → 本地 Ollama；deepseek=显式使用云端；off=仅规则模式
+        "provider": "auto",
+        "base_url": "",           # 留空时按 provider 沿用本地配置 / DeepSeek 默认地址
+        "api_key": "",            # DeepSeek 云端或自定义网关鉴权
+        "model": "",              # 留空时按 provider 自动选择
+        "temperature": 0.2,
+        "max_tokens": 4096,
+        "timeout": 300,
+        "max_rounds": 12,
+        "auto_navigate": False,   # 识别到意图后是否自动跳转；默认由用户点按钮
+        "wiki_top_k": 3,          # 每轮注入的 Wiki 页面数
     },
     # ── 识别记忆（长期校正经验 + 短期会话记忆 + 上下文压缩） ──
     "memory": {
@@ -138,6 +160,9 @@ _ENV_OVERRIDES = {
     "llm.api_key": "SCAN_LLM_API_KEY",
     "server.api_key": "SCAN_SERVER_API_KEY",
     "server.base_url": "SCAN_SERVER_URL",
+    # GPU OCR 服务地址/解释器可在部署时覆盖，不把绝对路径写进配置文件。
+    "ocr.gpu_service_url": "STRUCTURAL_OCR_GPU_URL",
+    "ocr.gpu_service_python": "STRUCTURAL_OCR_GPU_PYTHON",
 }
 
 
@@ -213,6 +238,10 @@ class Config:
         return self.data.get("agent", {})
 
     @property
+    def harness(self):
+        return self.data.get("harness", {})
+
+    @property
     def memory(self):
         return self.data.get("memory", {})
 
@@ -240,6 +269,23 @@ class Config:
             p = _ROOT / "data" / "scan_recognition.db"
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
+
+    def resolve_path(self, value):
+        """把配置中的相对路径按项目根解析；空值返回 None。"""
+        return _resolve_path(value)
+
+    def ocr_model_dirs(self):
+        """返回项目内实际存在的 PaddleOCR 模型目录。
+
+        只返回存在的目录；缺失时不传给 PaddleOCR，让其回退到默认
+        下载缓存，避免因项目未带模型而直接初始化失败。
+        """
+        out = {}
+        for key in ("det_model_dir", "rec_model_dir", "cls_model_dir"):
+            p = _resolve_path(self.ocr.get(key))
+            if p is not None and p.is_dir():
+                out[key] = str(p)
+        return out
 
     def save_default(self, path=None):
         """把内置默认配置写入配置文件（供用户编辑 api_key 等）。"""

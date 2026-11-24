@@ -42,14 +42,43 @@ _CORE_ALIASES = {
     "设计强度等级": ["设计等级"],
     "构件名称": ["构件位置及名称"],
     "构件轴号": ["轴线编号", "构件轴线编号"],
+    "芯样编号": ["序号"],
 }
 # 偏差值类（钢筋间距/保护层）：实测偏差值N ← 实测偏差值N / 实测值N
 _DEVIATION_ALIASES = {
-    **{f"实测偏差值{i}": [f"实测偏差值{i}", f"实测值{i}"] for i in range(1, 11)},
+    **{f"实测偏差值{i}": [f"实测偏差值{i}", f"偏差值{i}", f"实测值{i}"]
+       for i in range(1, 11)},
     # 模板"实测偏差平均值"对应录入的偏差值平均值（difflib 会误配到实测值平均值）
-    "实测偏差平均值": ["偏差值平均值"],
+    "实测偏差平均值": ["偏差值平均值", "实测偏差平均值"],
     "构件轴号": ["构件轴线编号", "轴线编号"],
     "结论": ["合格/不合格"],
+}
+
+# 化学植筋结果表：模板用词与 GUI 列名不同
+_ANCHOR_ALIASES = {
+    "试验现象": ["实测现象"],
+    "试验结果": ["结论"],
+    "检验荷载": ["检测荷载"],
+    "持续2min内荷载降低率": ["持荷2min内荷载值降低率"],
+    "构件轴号": ["构件轴线编号"],
+    "钢筋牌号": ["钢筋牌号/植筋规格"],
+}
+
+# 柱截面尺寸结果表：模板为三行复合表头（构件名称/轴号、设计值b/h、
+# 实测值b1~b3/h1~h3、实测平均值b/h），需逐列对应到采集列。
+_SECTION_COLUMN_ALIASES = {
+    "构件名称": ["构件位置及名称"],
+    "构件轴号": ["轴线编号", "构件轴线编号"],
+    "设计值b": ["设计宽度B(mm)"],
+    "设计值h": ["设计高度H(mm)"],
+    "实测值b1": ["实测宽度B1"],
+    "实测值b2": ["实测宽度B2"],
+    "实测值b3": ["实测宽度B3"],
+    "实测值h1": ["实测高度H1"],
+    "实测值h2": ["实测高度H2"],
+    "实测值h3": ["实测高度H3"],
+    "实测平均值b": ["宽度平均值(mm)"],
+    "实测平均值h": ["高度平均值(mm)"],
 }
 
 def _t(name):
@@ -90,9 +119,9 @@ SHEET_TEMPLATE_MAP = {
     ("剪力墙厚度检测", None): (_t("五、检测结果-表5.6.1 混凝土剪力墙构件结构厚度检测一览表.docx"), 1, {}),
     ("楼板构件厚度检测", None): (_t("五、检测结果-表5.6.2 楼板构件结构厚度检测结果一览表.docx"), 1, {}),
     ("混凝土梁结构尺寸检测", None): (_t("五、检测结果-表5.6.3 混凝土梁构件截面尺寸检测结果一览表.docx"), 1, {}),
-    ("混凝土柱结构尺寸检测", None): (_t("五、检测结果-表5.6.4 混凝土柱构件截面尺寸检测结果一览表.docx"), 1, {}),
+    ("混凝土柱结构尺寸检测", None): (_t("五、检测结果-表5.6.4 混凝土柱构件截面尺寸检测结果一览表.docx"), 3, _SECTION_COLUMN_ALIASES),
     # 填充墙化学植筋锚固承载力
-    ("化学植筋锚固承载力检测", None): (_t("五、检测结果-表5.7 填充墙化学植筋锚固承载力试验结果一览表.docx"), 1, {}),
+    ("化学植筋锚固承载力检测", None): (_t("五、检测结果-表5.7 填充墙化学植筋锚固承载力试验结果一览表.docx"), 1, _ANCHOR_ALIASES),
 }
 
 # 已知基础项目名（用于 sheet_key 归一化），长名优先匹配
@@ -126,6 +155,8 @@ REPORT_INFO_FIELDS = [
     ("project_location", "工程地点", ""),
     ("client", "委托单位", ""),
     ("witness", "见证单位", ""),
+    ("construction_unit", "建设单位", ""),
+    ("contractor", "施工单位", ""),
     ("tester", "检测人", ""),
     ("writer", "报告编写人", ""),
     ("checker", "复核人", ""),
@@ -196,7 +227,7 @@ CONCLUSION_TEMPLATES = {
     "混凝土柱结构尺寸检测": {
         "text": "经检测，混凝土柱构件截面尺寸满足设计及规范允许偏差要求。", "value_col": None},
     "化学植筋锚固承载力检测": {
-        "text": "经检测，填充墙化学植筋锚固承载力满足设计要求。", "value_col": None},
+        "text": "经检测，填充砌体墙锚固承载力满足设计要求。", "value_col": None},
 }
 _CONCLUSION_DEFAULT = {
     "text": "经检测，{item}{comp_part}相关指标满足设计要求。",
@@ -207,6 +238,8 @@ _CONCLUSION_DEFAULT = {
 
 # 合格/不合格类列名（判断是否存在不合格行）
 _PASS_FAIL_COLUMNS = ("合格/不合格", "结论")
+# 没有可比数值、也没有逐行合格结论时的统一措辞：不得默认“满足”
+_NO_DATA_TEXT = "经检测，{item}{comp_part}未提供足够数据，无法判定。"
 # 设计等级类列名（用于推定值与设计要求的规则比对）
 _DESIGN_COLUMNS = ("设计强度等级", "设计等级")
 
@@ -227,7 +260,11 @@ def _find_col(columns, names):
 
 
 def _fmt_num(v):
-    return f"{v:g}"
+    """强度类数值统一保留 1 位小数（与提示词/评定结论一致）。"""
+    try:
+        return "%.1f" % float(v)
+    except (TypeError, ValueError):
+        return str(v)
 
 
 def build_conclusion(base, comp, rows, columns):
@@ -242,7 +279,15 @@ def build_conclusion(base, comp, rows, columns):
     """
     tpl = CONCLUSION_TEMPLATES.get(base, _CONCLUSION_DEFAULT)
     comp_part = f"（{comp}）" if comp else ""
-    ctx = {"item": base, "comp": comp or "", "comp_part": comp_part, "value": ""}
+    try:
+        from report_generator.utils.report_items import canonical_name
+    except ImportError:  # 以 report_generator/ 为工作目录导入时
+        from utils.report_items import canonical_name
+    item_name = canonical_name(base, comp)
+    if comp and comp not in ("构件", "None") and f"（{comp}）" in item_name:
+        comp_part = ""
+    ctx = {"item": item_name, "comp": comp or "",
+           "comp_part": comp_part, "value": ""}
 
     # 1) 不合格行（合格/不合格、结论列）
     fail_idx = [i for i, c in enumerate(columns)
@@ -284,5 +329,16 @@ def build_conclusion(base, comp, rows, columns):
                         + "，应进行复核处理。")
             return tpl["text"].format(**ctx)
 
-    # 3) 无数值可比：不作满足性判定
-    return tpl.get("no_value", tpl["text"]).format(**ctx)
+    # 3) 没有强度值可比时，只有“逐行合格结论”全部非空才允许判满足；
+    #    否则必须给出“无法判定”，绝不能默认合格。
+    pass_cols = [i for i, c in enumerate(columns)
+                 if str(c).strip() in _PASS_FAIL_COLUMNS]
+    pass_values = []
+    for row in rows:
+        for i in pass_cols:
+            if i < len(row) and str(row[i]).strip():
+                pass_values.append(str(row[i]).strip())
+    if pass_values:
+        return tpl["text"].format(**ctx)
+
+    return tpl.get("no_data", _NO_DATA_TEXT).format(**ctx)

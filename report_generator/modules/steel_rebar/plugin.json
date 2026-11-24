@@ -1,0 +1,508 @@
+{
+  "schema": "structural.item/1",
+  "id": "steel_rebar",
+  "name": "钢筋配置",
+  "structure_type": "混凝土结构",
+  "tree_order": 20,
+  "source": "python",
+  "items": [
+    {
+      "key": "剪力墙构件钢筋间距检测",
+      "columns_key": "剪力墙构件钢筋间距检测",
+      "family": "spacing",
+      "description": "钢筋配置 · 剪力墙构件钢筋间距检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件位置及名称",
+        "轴线编号",
+        "方向",
+        "设计值",
+        "实测值1",
+        "实测值2",
+        "实测值3",
+        "实测值4",
+        "实测值5",
+        "实测值6",
+        "实测值平均值",
+        "偏差值1",
+        "偏差值2",
+        "偏差值3",
+        "偏差值4",
+        "偏差值5",
+        "偏差值6",
+        "偏差值平均值",
+        "合格点率",
+        "合格/不合格",
+        "楼层"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string",
+        "string"
+      ],
+      "calc_rules": {
+        "11": {
+          "type": "avg",
+          "sources": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "decimals": 0
+        },
+        "12": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 5,
+          "force_sign": true
+        },
+        "13": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 6,
+          "force_sign": true
+        },
+        "14": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 7,
+          "force_sign": true
+        },
+        "15": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 8,
+          "force_sign": true
+        },
+        "16": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 9,
+          "force_sign": true
+        },
+        "17": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 10,
+          "force_sign": true
+        },
+        "18": {
+          "type": "avg_marked",
+          "sources": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "decimals": 0,
+          "force_sign": true,
+          "format_col": 18,
+          "lower": -10.0,
+          "upper": 10.0
+        }
+      },
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "剪力墙构件钢筋间距检测"
+          }
+        ]
+      },
+      "equipment": [
+        "一体式钢筋扫描仪"
+      ],
+      "original_record": {
+        "template": "builtin_rebar_spacing"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "剪力墙构件钢筋间距检测"
+      },
+      "skill": {
+        "slug": "rebar-spacing-wall",
+        "description": "钢筋配置 · 剪力墙构件钢筋间距检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「剪力墙构件钢筋间距检测」数据时。"
+      },
+      "assessment": {
+        "spec": "spacing_wall",
+        "family": "spacing",
+        "input": "sheet_rows"
+      }
+    },
+    {
+      "key": "现浇板钢筋间距检测",
+      "columns_key": "现浇板钢筋间距检测",
+      "family": "spacing",
+      "description": "钢筋配置 · 现浇板钢筋间距检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件位置及名称",
+        "轴线编号",
+        "方向",
+        "设计值",
+        "实测值1",
+        "实测值2",
+        "实测值3",
+        "实测值4",
+        "实测值5",
+        "实测值6",
+        "实测值平均值",
+        "偏差值1",
+        "偏差值2",
+        "偏差值3",
+        "偏差值4",
+        "偏差值5",
+        "偏差值6",
+        "偏差值平均值",
+        "合格点率",
+        "合格/不合格",
+        "楼层"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string",
+        "string"
+      ],
+      "calc_rules": {
+        "11": {
+          "type": "avg",
+          "sources": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "decimals": 0
+        },
+        "12": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 5,
+          "force_sign": true
+        },
+        "13": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 6,
+          "force_sign": true
+        },
+        "14": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 7,
+          "force_sign": true
+        },
+        "15": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 8,
+          "force_sign": true
+        },
+        "16": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 9,
+          "force_sign": true
+        },
+        "17": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 10,
+          "force_sign": true
+        },
+        "18": {
+          "type": "avg_marked",
+          "sources": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "decimals": 0,
+          "force_sign": true,
+          "format_col": 18,
+          "lower": -10.0,
+          "upper": 10.0
+        }
+      },
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "现浇板钢筋间距检测"
+          }
+        ]
+      },
+      "equipment": [
+        "一体式钢筋扫描仪"
+      ],
+      "original_record": {
+        "template": "builtin_rebar_spacing"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "现浇板钢筋间距检测"
+      },
+      "skill": {
+        "slug": "rebar-spacing-slab",
+        "description": "钢筋配置 · 现浇板钢筋间距检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「现浇板钢筋间距检测」数据时。"
+      },
+      "assessment": {
+        "spec": "spacing_slab",
+        "family": "spacing",
+        "input": "sheet_rows"
+      }
+    },
+    {
+      "key": "梁构件底排受力钢筋根数检测",
+      "columns_key": "梁构件底排受力钢筋根数检测",
+      "family": "count",
+      "description": "钢筋配置 · 梁构件底排受力钢筋根数检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件位置及名称",
+        "轴线编号",
+        "设计根数(梁底跨中底排)",
+        "实测根数(梁底跨中底排)",
+        "合格/不合格",
+        "楼层"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {},
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "梁构件底排受力钢筋根数检测"
+          }
+        ]
+      },
+      "equipment": [
+        "一体式钢筋扫描仪"
+      ],
+      "original_record": {
+        "template": "builtin_rebar_count"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "梁构件底排受力钢筋根数检测"
+      },
+      "skill": {
+        "slug": "rebar-count-beam",
+        "description": "钢筋配置 · 梁构件底排受力钢筋根数检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「梁构件底排受力钢筋根数检测」数据时。"
+      },
+      "assessment": {
+        "spec": "count_beam",
+        "family": "count",
+        "input": "sheet_rows"
+      }
+    },
+    {
+      "key": "柱构件主要受力钢筋根数检测",
+      "columns_key": "柱构件主要受力钢筋根数检测",
+      "family": "count",
+      "description": "钢筋配置 · 柱构件主要受力钢筋根数检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件位置及名称",
+        "轴线编号",
+        "设计根数-b",
+        "设计根数-h",
+        "实测根数-b",
+        "实测根数-h",
+        "合格/不合格",
+        "楼层"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {},
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "柱构件主要受力钢筋根数检测"
+          }
+        ]
+      },
+      "equipment": [
+        "一体式钢筋扫描仪"
+      ],
+      "original_record": {
+        "template": "builtin_rebar_count"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "柱构件主要受力钢筋根数检测"
+      },
+      "skill": {
+        "slug": "rebar-count-column",
+        "description": "钢筋配置 · 柱构件主要受力钢筋根数检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「柱构件主要受力钢筋根数检测」数据时。"
+      },
+      "assessment": {
+        "spec": "count_column",
+        "family": "count",
+        "input": "sheet_rows"
+      }
+    },
+    {
+      "key": "剪力墙钢筋根数检测",
+      "columns_key": "剪力墙钢筋根数检测",
+      "family": "count",
+      "description": "钢筋配置 · 剪力墙钢筋根数检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件位置及名称",
+        "轴线编号",
+        "设计根数-b",
+        "设计根数-h",
+        "实测根数-b",
+        "实测根数-h",
+        "合格/不合格",
+        "楼层"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {},
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "剪力墙钢筋根数检测"
+          }
+        ]
+      },
+      "equipment": [
+        "一体式钢筋扫描仪"
+      ],
+      "original_record": {
+        "template": "builtin_rebar_count"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "剪力墙钢筋根数检测"
+      },
+      "skill": {
+        "slug": "rebar-count-wall",
+        "description": "钢筋配置 · 剪力墙钢筋根数检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「剪力墙钢筋根数检测」数据时。"
+      },
+      "assessment": {
+        "spec": "count_wall",
+        "family": "count",
+        "input": "sheet_rows"
+      }
+    }
+  ]
+}

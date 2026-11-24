@@ -117,7 +117,7 @@ class CoreDrillingMixin:
                 data[row][self._CD_COL_AXIS] = ""
                 data[row][self._CD_COL_SAMPLE_NO] = sample_no
                 data[row][self._CD_COL_DIAMETER] = f"{diameter:.1f}"
-                data[row][self._CD_COL_AREA] = f"{area:.0f}"
+                data[row][self._CD_COL_AREA] = f"{area:.2f}"
                 data[row][self._CD_COL_LOAD] = ""
                 data[row][self._CD_COL_STRENGTH] = ""
                 data[row][self._CD_COL_INFERRED] = ""
@@ -667,7 +667,7 @@ class CoreDrillingMixin:
                     data[row][self._RCD_COL_AXIS] = ""
                     data[row][self._RCD_COL_ZONE] = str(z + 1)
                     data[row][self._RCD_COL_DIAMETER] = f"{diameter:.1f}"
-                    data[row][self._RCD_COL_AREA] = f"{area:.3f}"
+                    data[row][self._RCD_COL_AREA] = f"{area:.2f}"
                     data[row][self._RCD_COL_LOAD] = ""
                     data[row][self._RCD_COL_STRENGTH] = ""
                     data[row][self._RCD_COL_GRADE] = grade
@@ -859,7 +859,7 @@ class CoreDrillingMixin:
                         if area_it is None:
                             area_it = QTableWidgetItem()
                             self.table.setItem(r, self._CD_COL_AREA, area_it)
-                        area_it.setText(f"{new_area:.0f}")
+                        area_it.setText(f"{new_area:.2f}")
                         d_item = self.table.item(r, self._CD_COL_DIAMETER)
                         if d_item is None:
                             d_item = QTableWidgetItem()
@@ -887,7 +887,7 @@ class CoreDrillingMixin:
                     if area_item is None:
                         area_item = QTableWidgetItem()
                         self.table.setItem(row, self._RCD_COL_AREA, area_item)
-                    area_item.setText(f"{area_val:.3f}")
+                    area_item.setText(f"{area_val:.2f}")
                 self._recalc_rebound_core_drilling_row(row)
                 self._recalc_rebound_core_drilling_batch_mean()
                 self._sync_table_to_data()

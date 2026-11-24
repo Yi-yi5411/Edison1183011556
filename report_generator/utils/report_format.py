@@ -32,7 +32,7 @@ FONT_ASCII = "Times New Roman"  # 西文/数字
 SIZE_H1_PT = 16.0           # 三号：章标题（一、工程概况）
 SIZE_H2_PT = 14.0           # 四号：节标题
 SIZE_BODY_PT = 12.0         # 小四：正文
-SIZE_TABLE_PT = 10.5        # 五号：表格
+SIZE_TABLE_PT = 10.5        # 五号：模板表格默认字号（结果表单独用 11pt）
 SIZE_FOOTER_PT = 9.0        # 小五：页脚
 
 PAGE_WIDTH_CM = 21.0        # A4 纵向

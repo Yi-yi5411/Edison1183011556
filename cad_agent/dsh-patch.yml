@@ -1,0 +1,17 @@
+# DSH profile 片段：AutoCAD / 探索者 MCP 服务
+# 把下面的条目并入 profile 的 cordis.patch.yml（顶层数组追加）。
+# 需要 pywin32 才能在线画图；没有 AutoCAD 时自动回退 DXF（[cad].backend=auto）。
+- insert:
+    - id: autocad-mcp
+      name: "@deepseek-ai/dsh-mcp-client"
+      config:
+        serverName: autocad
+        transport: stdio
+        command: 'C:\Program Files\python\python.exe'
+        args: ['-u', '-m', 'cad_agent.mcp_server']
+        cwd: 'C:\Users\Administrator\Desktop\structural_inspection'
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: '1'
+        toolCallTimeoutMs: 120000
+        failOnStartupError: false

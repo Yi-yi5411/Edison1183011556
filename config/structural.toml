@@ -1,0 +1,40 @@
+# 工程检测harness —— 运行配置
+# 修改后重启后端与 MCP 生效；环境变量优先（见 webapp/structural_config.py）
+
+[app]
+version = "1.0.0"
+
+[server]
+host = "127.0.0.1"
+port = 8765
+api_base = "http://127.0.0.1:8765/api"
+
+[dsh]
+# DSH GUI 的对话地址（Vue 端 /harness 直接嵌入它）
+# 3660 = 带 structure dock / MCP / 技能的源码版 web 实例（scripts/start-dsh-source.ps1）
+# 若改回桌面端，用 http://127.0.0.1:3642
+gui_url = "http://127.0.0.1:3660"
+# MCP 服务名（dsh-mcp-client 配置里的 serverName）
+mcp_server_name = "structural_inspection"
+
+[paths]
+data_dir = "data"
+exports_dir = "report_generator/exports"
+templates_dir = "data/templates"
+
+[cad]
+# auto=有 AutoCAD 用 COM，否则写 DXF 文件；com=强制在线；dxf=强制离线
+backend = "auto"
+acad_progid = "AutoCAD.Application.23"
+acad_exe = "D:\Program Files\Autodesk\AutoCAD 2020\acad.exe"
+tsdp_dir = "D:\Program Files\TszCAD\TSDP2024"
+work_dir = "D:\TSSDWORK"
+text_height = 300
+axis_label_diameter = 800
+
+[yjk]
+# 盈建科 8.x 自带 Python 3.10 与 YJKAPI；结构计算通过它执行
+install_dir = "C:\YJKS\YJKS_8_0_0"
+python = "C:\YJKS\YJKS_8_0_0\Python310\python.exe"
+work_dir = "data/yjk"
+timeout = 900

@@ -2,11 +2,11 @@
 """化学植筋锚固承载力检测 - 列头与列类型"""
 
 COLUMNS = {
-    '化学植筋锚固承载力检测': ['楼栋', '序号', '构件名称', '构件轴线编号', '钢筋牌号/植筋规格', '公称直径(mm)', '检测荷载（kN）', '持荷2min内荷载值降低率', '实测现象', '结论'],
+    '化学植筋锚固承载力检测': ['楼栋', '序号', '构件名称', '构件轴线编号', '钢筋牌号/植筋规格', '公称直径(mm)', '检测荷载（kN）', '持荷2min内荷载值降低率', '实测现象', '结论', '楼层'],
 }
 
 COLUMN_TYPES = {
-    '化学植筋锚固承载力检测': ['string', 'string', 'string', 'string', 'float', 'float', 'float', 'string', 'string', 'string'],
+    '化学植筋锚固承载力检测': ['string', 'string', 'string', 'string', 'float', 'float', 'float', 'string', 'string', 'string', 'string'],
 }
 
 

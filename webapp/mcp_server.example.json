@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "structural-inspection": {
+      "command": "C:\\Program Files\\python\\python.exe",
+      "args": [
+        "C:\\Users\\Administrator\\Desktop\\structural_inspection\\webapp\\mcp_server.py"
+      ],
+      "env": {
+        "STRUCTURAL_API_BASE": "http://127.0.0.1:8765/api"
+      }
+    }
+  }
+}

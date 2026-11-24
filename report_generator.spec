@@ -123,11 +123,12 @@ datas = _tree_datas(PROJECT_DIR / "report_generator", "report_generator")
 # 报告章节模板目录（utils/word_report.py 经 resolve_path("report_template") 访问，
 # frozen 模式下 PROJECT_ROOT = _MEIPASS，必须整体打包到 _internal/report_template/）
 datas += _tree_datas(PROJECT_DIR / "report_template", "report_template")
+_DESKTOP = PROJECT_DIR / "desktop"
 datas += [
     # 登录用户数据库（含全部已注册用户）+ 种子用户 SQL
-    # login_launcher.py 在运行时从自身所在目录读取这两个文件
-    (str(PROJECT_DIR / "auth.db"), "."),
-    (str(PROJECT_DIR / "user_mobile_1029.sql"), "."),
+    # desktop/login_launcher.py 在 frozen 模式下从 _MEIPASS 根目录读取
+    (str(_DESKTOP / "auth.db"), "."),
+    (str(_DESKTOP / "user_mobile_1029.sql"), "."),
 ]
 datas = [d for d in datas if _keep_entry(d[1] if len(d) == 3 else d[0])]
 
@@ -153,6 +154,9 @@ a = Analysis(
         "langchain_core.prompt_values", "langchain_core.output_parsers",
         "langchain_ollama", "langchain_ollama.chat_models",
         "ollama", "ollama._client",
+      # —— 桌面端登录/主页（report_generator/main.py 导入 desktop 包）——
+      "desktop", "desktop.login_launcher", "desktop.login",
+      "desktop.auth_db", "desktop.home_menu",
     ],
     excludes=[
         # 体积优化：源码从未使用的重型依赖（pandas 死导入已删除）
@@ -172,7 +176,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="主体结构检测数据管理录入系统V1.0",
+    name="工程检测harness",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,                    # Windows 无 strip.exe
@@ -183,7 +187,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     # EXE 文件图标（资源管理器/任务栏显示，由 assets/logo.jpg 生成）
-    icon=str(PROJECT_DIR / "app.ico") if (PROJECT_DIR / "app.ico").exists() else None,
+    icon=str(_DESKTOP / "app.ico") if (_DESKTOP / "app.ico").exists() else None,
 )
 
 coll = COLLECT(
@@ -199,5 +203,5 @@ coll = COLLECT(
         "Qt5*.dll", "Qt6*.dll", "qwindows*.dll", "qminimal*.dll",
         "qoffscreen*.dll", "MSVCP*.dll", "VCRUNTIME*.dll", "ucrtbase.dll",
     ],
-    name="主体结构检测数据管理录入系统V1.0",
+    name="工程检测harness",
 )

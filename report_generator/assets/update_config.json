@@ -4,6 +4,6 @@
   "update_title": "系统更新提示",
   "update_content": "当前已是最新版本，无需更新。",
   "changelog": [
-    "V1.0：主体结构检测数据管理录入系统初始版本"
+    "V1.0：工程检测harness初始版本"
   ]
 }

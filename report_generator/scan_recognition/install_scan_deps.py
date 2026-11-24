@@ -96,7 +96,7 @@ def main():
             run_pip(base_pip_args(mirror) + [pkg], pkg)
     print(
         "\n完成。请随后在 报告生成器/文档扫描识别 对话框中使用。\n"
-        "注意：PaddleOCR 首次识别会自动下载模型，需联网。\n"
+        "项目已带 data/models/paddleocr 模型；若目录缺失，PaddleOCR 首次识别会自动下载，需联网。\n"
         "通义千问请在配置文件 report_generator/assets/scan_recognition_config.json 填写 api_key。"
     )
 

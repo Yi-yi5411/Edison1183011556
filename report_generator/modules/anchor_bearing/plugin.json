@@ -1,0 +1,104 @@
+{
+  "schema": "structural.item/1",
+  "id": "anchor_bearing",
+  "name": "化学植筋锚固承载力检测",
+  "structure_type": "混凝土结构",
+  "tree_order": 50,
+  "source": "python",
+  "items": [
+    {
+      "key": "化学植筋锚固承载力检测",
+      "columns_key": "化学植筋锚固承载力检测",
+      "family": "anchor",
+      "description": "化学植筋锚固承载力检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "序号",
+        "构件名称",
+        "构件轴线编号",
+        "钢筋牌号/植筋规格",
+        "公称直径(mm)",
+        "检测荷载（kN）",
+        "持荷2min内荷载值降低率",
+        "实测现象",
+        "结论",
+        "楼层"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string",
+        "string",
+        "string"
+      ],
+      "calc_rules": {
+        "9": {
+          "type": "cond_conclusion",
+          "conditions": [
+            {
+              "col": 6,
+              "op": ">=",
+              "value": 6.0,
+              "mark": true
+            },
+            {
+              "col": 7,
+              "op": "<=",
+              "value": 0.05,
+              "mark": true
+            },
+            {
+              "col": 8,
+              "op": "contains",
+              "value": "基材无裂缝、钢筋无滑移",
+              "mark": true
+            }
+          ],
+          "conclusion_pass": "符合规范要求",
+          "conclusion_fail": "不符合规范要求"
+        }
+      },
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "化学植筋锚固承载力检测"
+          }
+        ]
+      },
+      "equipment": [
+        "锚杆拉拔仪"
+      ],
+      "original_record": {
+        "template": "builtin_anchor"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "化学植筋锚固承载力检测"
+      },
+      "skill": {
+        "slug": "anchor-bearing",
+        "description": "化学植筋锚固承载力检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「化学植筋锚固承载力检测」数据时。"
+      },
+      "assessment": {
+        "spec": "anchor_bearing",
+        "family": "anchor",
+        "input": "sheet_rows"
+      }
+    }
+  ]
+}

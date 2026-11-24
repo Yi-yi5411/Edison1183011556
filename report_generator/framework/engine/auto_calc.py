@@ -102,6 +102,10 @@ class CalcEngine:
                     self._apply_avg_marked_rule(row, target_col, rule)
                 elif calc_type == "rebound_strength":
                     self._apply_rebound_strength_rule(row, target_col, rule)
+                elif calc_type == "brick_rebound_strength":
+                    self._apply_brick_rebound_strength_rule(row, target_col, rule)
+                elif calc_type == "component_stat":
+                    self._apply_component_stat_rule(row, target_col, rule, row_count)
             except Exception:
                 pass
 
@@ -159,6 +163,24 @@ class CalcEngine:
         except (ValueError, TypeError, OverflowError):
             self._set_cell_text(row, target_col, "")
 
+    def _apply_brick_rebound_strength_rule(self, row, target_col, rule):
+        """砖回弹测强曲线：f = a*R² + b*R + c（普通烧结砖 Excel 规则）。"""
+        rm = self._get_cell_float(row, rule.get("rm_col", 0))
+        if rm is None or rm <= 0:
+            self._set_cell_text(row, target_col, "")
+            return
+        try:
+            strength = (rule.get("coef_a", 0.02) * rm ** 2
+                        + rule.get("coef_b", -0.45) * rm
+                        + rule.get("constant", 1.25))
+            if strength < 0:
+                self._set_cell_text(row, target_col, "")
+                return
+            decimals = rule.get("decimals", 2)
+            self._set_cell_text(row, target_col, f"{strength:.{decimals}f}")
+        except (ValueError, TypeError, OverflowError):
+            self._set_cell_text(row, target_col, "")
+
     # ── 批次统计（跨行聚合）───────────────────────────────────────
 
     def _batch_values(self, row, rule, row_count):
@@ -169,7 +191,6 @@ class CalcEngine:
         if not row_count:
             return []
         batch_col = rule.get("batch_col", 0)
-        source_col = rule.get("source_col", 0)
         batch_id = (self._get_cell(row, batch_col) or "").strip()
         if not batch_id:
             return []
@@ -178,29 +199,116 @@ class CalcEngine:
             bid = (self._get_cell(r, batch_col) or "").strip()
             if bid != batch_id:
                 continue
-            val = self._get_cell_float(r, source_col)
+            val = self._source_value(r, rule)
             if val is not None:
                 values.append(val)
         return values
 
-    def _apply_batch_stat_rule(self, row, target_col, rule, row_count):
-        """批次统计：对同批次所有行的 source_col 数值做聚合。
+    def _component_key(self, row, component_cols):
+        cols = component_cols or []
+        key = tuple((self._get_cell(row, c) or "").strip() for c in cols)
+        return key
 
-        stat 支持 avg / var（样本方差） / std（样本标准差 n-1） /
+    def _source_value(self, row_index, rule):
+        """统计用源值；配置 source_rm_col 时按测强曲线重新计算全精度值。
+
+        表格展示的强度列通常只保留 2 位小数，直接用它统计会带来
+        0.01 级累积误差；砖回弹的 Excel 规则用全精度值计算构件均值与
+        批次方差，所以这里允许从平均回弹值重新换算。
+        """
+        rm_col = rule.get("source_rm_col")
+        if rm_col is None:
+            return self._get_cell_float(row_index, rule.get("source_col", 0))
+        rm = self._get_cell_float(row_index, rm_col)
+        if rm is None or rm <= 0:
+            return None
+        value = (rule.get("coef_a", 0.02) * rm ** 2
+                 + rule.get("coef_b", -0.45) * rm
+                 + rule.get("constant", 1.25))
+        return value if value >= 0 else None
+
+    def _component_groups(self, row, rule, row_count):
+        """同批次内按构件列分组，返回 {构件key: [测区值,...]}。"""
+        if not row_count:
+            return {}
+        batch_col = rule.get("batch_col", 0)
+        component_cols = rule.get("component_cols") or []
+        batch_id = (self._get_cell(row, batch_col) or "").strip()
+        if not batch_id:
+            return {}
+        groups = {}
+        for r in range(row_count):
+            bid = (self._get_cell(r, batch_col) or "").strip()
+            if bid != batch_id:
+                continue
+            val = self._source_value(r, rule)
+            if val is None:
+                continue
+            key = self._component_key(r, component_cols)
+            if not any(key):
+                # 构件信息未填时按行兜底，避免把所有行误合并为一个构件
+                key = ("__row__", r)
+            groups.setdefault(key, []).append(val)
+        return groups
+
+    def _batch_component_values(self, row, rule, row_count):
+        """同批次各构件平均值（不是全部测区值）。"""
+        groups = self._component_groups(row, rule, row_count)
+        values = []
+        for items in groups.values():
+            if items:
+                values.append(sum(items) / len(items))
+        return values
+
+    def _apply_component_stat_rule(self, row, target_col, rule, row_count):
+        """构件统计：将同一构件各测区的 source_col 均值写入该构件的所有行。"""
+        groups = self._component_groups(row, rule, row_count)
+        if not groups:
+            self._set_cell_text(row, target_col, "")
+            return
+        component_cols = rule.get("component_cols") or []
+        batch_col = rule.get("batch_col", 0)
+        batch_id = (self._get_cell(row, batch_col) or "").strip()
+        key = self._component_key(row, component_cols)
+        if not any(key):
+            key = ("__row__", row)
+        items = groups.get(key)
+        if not items:
+            self._set_cell_text(row, target_col, "")
+            return
+        text = f"{sum(items) / len(items):.{rule.get('decimals', 2)}f}"
+        for r in range(row_count):
+            if (self._get_cell(r, batch_col) or "").strip() != batch_id:
+                continue
+            rkey = self._component_key(r, component_cols)
+            if not any(rkey):
+                rkey = ("__row__", r)
+            if rkey == key:
+                self._set_cell_text(r, target_col, text)
+
+    def _apply_batch_stat_rule(self, row, target_col, rule, row_count):
+        """批次统计：对同批次所有行或各构件均值做聚合。
+
+        stat 支持 avg / var / std（样本标准差 n-1） /
         cv（变异系数=std/avg，as_percent 时以百分数显示） /
         std_value（强度标准值 = avg − 1.8×std） / min。
-        统计列在该批次的每一行上都写入相同结果（单格编辑后
-        全批次同步刷新）。
+        带 component_cols 时先按构件求平均，再对构件均值统计。
+        var 默认样本方差；sum_squares=True 时输出离差平方和
+        （与现场砖回弹 Excel 的“方差”列一致）。
         """
-        values = self._batch_values(row, rule, row_count)
+        if rule.get("component_cols"):
+            values = self._batch_component_values(row, rule, row_count)
+        else:
+            values = self._batch_values(row, rule, row_count)
         if not values:
             self._set_cell_text(row, target_col, "")
             return
         n = len(values)
         avg = sum(values) / n
+        squares = sum((v - avg) ** 2 for v in values)
         if n >= 2:
-            var = sum((v - avg) ** 2 for v in values) / (n - 1)
-            std = math.sqrt(var)
+            var = squares if rule.get("sum_squares") else squares / (n - 1)
+            std = math.sqrt(squares / (n - 1))
         else:
             var = None
             std = None
@@ -250,13 +358,23 @@ class CalcEngine:
         """批次砖强度等级评定（GB 5101 烧结普通砖）。
 
         变异系数 δ=std/avg ≤ 0.21 时按 平均值+强度标准值(f̄−1.8s) 评定，
-        否则按 平均值+单块最小值 评定；取满足的最高等级，
+        否则按 平均值+最小值 评定；取满足的最高等级，
         全部不满足输出 grade_fail（默认“不满足”）。
         """
-        values = self._batch_values(row, rule, row_count)
+        if rule.get("component_cols"):
+            values = self._batch_component_values(row, rule, row_count)
+        else:
+            values = self._batch_values(row, rule, row_count)
         if not values:
             self._set_cell_text(row, target_col, "")
             return
+        # 单块最小值默认取构件均值的最小值；砖回弹按现场规则取全部测区
+        # 强度换算值的最小值（与 Excel 强度评定表一致）。
+        if rule.get("min_from_all"):
+            all_values = self._batch_values(row, rule, row_count)
+            batch_min = min(all_values) if all_values else min(values)
+        else:
+            batch_min = min(values)
         n = len(values)
         avg = sum(values) / n
         if n >= 2:
@@ -265,15 +383,16 @@ class CalcEngine:
         else:
             std = None
             cv = None
-        batch_min = min(values)
         grade = rule.get("grade_fail", "不满足")
         for name, g_avg, g_stdval, g_min in self._BRICK_GRADES:
             if avg < g_avg:
                 continue
+            if batch_min < g_min:
+                continue
             if cv is not None and cv <= 0.21:
                 ok = (avg - 1.8 * std) >= g_stdval
             else:
-                ok = batch_min >= g_min
+                ok = True
             if ok:
                 grade = name
                 break

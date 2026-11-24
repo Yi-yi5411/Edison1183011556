@@ -1,0 +1,198 @@
+{
+  "schema": "structural.item/1",
+  "id": "steel_coating",
+  "name": "钢结构涂层厚度检测",
+  "structure_type": "钢结构",
+  "tree_order": 20,
+  "source": "python",
+  "items": [
+    {
+      "key": "防腐涂层厚度检测",
+      "columns_key": "防腐涂层厚度检测",
+      "family": "record_check",
+      "description": "钢结构涂层厚度检测 · 防腐涂层厚度检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件编号",
+        "构件位置及名称",
+        "设计厚度(μm)",
+        "测点1(μm)",
+        "测点2(μm)",
+        "测点3(μm)",
+        "测点4(μm)",
+        "测点5(μm)",
+        "平均厚度(μm)",
+        "结论",
+        "备注"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {
+        "9": {
+          "type": "avg",
+          "sources": [
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "decimals": 1
+        },
+        "10": {
+          "type": "col_conclusion",
+          "pairs": [
+            {
+              "left_col": 9,
+              "op": ">=",
+              "right_col": 3
+            }
+          ],
+          "conclusion_pass": "符合要求",
+          "conclusion_fail": "不符合要求"
+        }
+      },
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "防腐涂层厚度检测"
+          }
+        ]
+      },
+      "equipment": [
+        "涂层测厚仪"
+      ],
+      "original_record": {
+        "template": "builtin_generic"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "防腐涂层厚度检测"
+      },
+      "skill": {
+        "slug": "coating-anti-corrosion",
+        "description": "钢结构涂层厚度检测 · 防腐涂层厚度检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「防腐涂层厚度检测」数据时。"
+      },
+      "assessment": {
+        "spec": "coating_anti_corrosion",
+        "family": "record_check",
+        "input": "sheet_rows"
+      }
+    },
+    {
+      "key": "防火涂层厚度检测",
+      "columns_key": "防火涂层厚度检测",
+      "family": "record_check",
+      "description": "钢结构涂层厚度检测 · 防火涂层厚度检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件编号",
+        "构件位置及名称",
+        "设计厚度(μm)",
+        "测点1(μm)",
+        "测点2(μm)",
+        "测点3(μm)",
+        "测点4(μm)",
+        "测点5(μm)",
+        "平均厚度(μm)",
+        "结论",
+        "备注"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {
+        "9": {
+          "type": "avg",
+          "sources": [
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "decimals": 1
+        },
+        "10": {
+          "type": "col_conclusion",
+          "pairs": [
+            {
+              "left_col": 9,
+              "op": ">=",
+              "right_col": 3
+            }
+          ],
+          "conclusion_pass": "符合要求",
+          "conclusion_fail": "不符合要求"
+        }
+      },
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "防火涂层厚度检测"
+          }
+        ]
+      },
+      "equipment": [
+        "涂层测厚仪"
+      ],
+      "original_record": {
+        "template": "builtin_generic"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "防火涂层厚度检测"
+      },
+      "skill": {
+        "slug": "coating-fireproof",
+        "description": "钢结构涂层厚度检测 · 防火涂层厚度检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「防火涂层厚度检测」数据时。"
+      },
+      "assessment": {
+        "spec": "coating_fireproof",
+        "family": "record_check",
+        "input": "sheet_rows"
+      }
+    }
+  ]
+}

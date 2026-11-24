@@ -1,0 +1,459 @@
+@router.websocket("/chat/ws")
+async def chat_ws(websocket: WebSocket):
+    username = _session_user(websocket)
+    if not username:
+        await websocket.close(code=1008)
+        return
+    await websocket.accept()
+
+    send_lock = asyncio.Lock()
+    pending_permissions: dict[str, asyncio.Future] = {}
+    prompt_task: Optional[asyncio.Task] = None
+    turn: dict[str, Any] = {}
+    is_new_session = True
+
+    async def send(payload: dict) -> None:
+        async with send_lock:
+            await websocket.send_json(payload)
+
+    def save_turn(force: bool = False) -> None:
+        data = turn.get("transcript")
+        if not data or not session_id:
+            return
+        now = time.time()
+        if not force and now - float(turn.get("last_save") or 0) < 0.8:
+            return
+        turn["last_save"] = now
+        try:
+            chat_store.save_transcript(session_id, data)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def ensure_assistant_message() -> str:
+        data = turn.get("transcript")
+        if not data:
+            return ""
+        message_id = str(turn.get("assistant_id") or "")
+        if message_id and any(m.get("id") == message_id for m in data.get("messages") or []):
+            return message_id
+        message_id = "a-" + uuid.uuid4().hex[:12]
+        data.setdefault("messages", []).append({
+            "id": message_id,
+            "role": "assistant",
+            "text": "",
+            "streaming": True,
+            "at": time.time(),
+        })
+        turn["assistant_id"] = message_id
+        return message_id
+
+    def update_assistant_text(text: str) -> None:
+        data = turn.get("transcript")
+        if not data or not text:
+            return
+        message_id = ensure_assistant_message()
+        for item in data.get("messages") or []:
+            if item.get("id") == message_id:
+                item["text"] = str(item.get("text") or "") + text
+                break
+        save_turn()
+
+    async def on_update(params: dict) -> None:
+        update = (params or {}).get("update") or {}
+        kind = update.get("sessionUpdate")
+        data = turn.get("transcript")
+        if data:
+            if kind == "agent_message_chunk":
+                content = update.get("content") or {}
+                text = content.get("text") if isinstance(content, dict) else ""
+                if isinstance(text, str):
+                    update_assistant_text(text)
+            elif kind in ("tool_call", "tool_call_update"):
+                tool_id = str(update.get("toolCallId") or update.get("id") or "")
+                if tool_id:
+                    raw = update.get("rawInput")
+                    if raw is None:
+                        raw = update.get("rawOutput")
+                    if raw is None:
+                        raw = update.get("content")
+                    detail = ""
+                    if raw is not None:
+                        try:
+                            detail = json.dumps(raw, ensure_ascii=False)[:3000]
+                        except Exception:  # noqa: BLE001
+                            detail = str(raw)[:3000]
+                    items = data.setdefault("tools", [])
+                    target = next((x for x in items if x.get("id") == tool_id), None)
+                    if target is None:
+                        target = {"id": tool_id, "at": time.time()}
+                        items.append(target)
+                    target["title"] = update.get("title") or target.get("title") or "工具调用"
+                    target["status"] = update.get("status") or target.get("status") or "pending"
+                    target["kind"] = update.get("kind") or target.get("kind") or ""
+                    if detail:
+                        target["detail"] = detail
+                    data["tools"] = items[-120:]
+                    save_turn()
+            elif kind == "plan":
+                entries = update.get("entries")
+                if isinstance(entries, list):
+                    data["plan"] = entries
+                    save_turn(force=True)
+        await send({"type": "update", "params": params})
+
+    async def on_permission(params: dict) -> str:
+        permission_id = uuid.uuid4().hex
+        future: asyncio.Future = asyncio.get_running_loop().create_future()
+        pending_permissions[permission_id] = future
+        await send({"type": "permission_request", "id": permission_id, "params": params})
+        try:
+            return await asyncio.wait_for(future, timeout=300)
+        except Exception:  # noqa: BLE001
+            return "reject-once"
+        finally:
+            pending_permissions.pop(permission_id, None)
+
+    client = AcpClient(_ROOT, on_update, on_permission)
+    session_id = ""
+
+    def history_view(target: str) -> dict:
+        data = chat_store.load_transcript(target)
+        messages = []
+        for item in (data.get("messages") or [])[-300:]:
+            view = dict(item)
+            view["text"] = str(view.get("text") or "")[:20000]
+            messages.append(view)
+        return {
+            "messages": messages,
+            "tools": (data.get("tools") or [])[-120:],
+            "plan": (data.get("plan") or [])[-50:],
+            "summary": data.get("summary") or "",
+            "title": data.get("title") or "",
+        }
+
+    def memory_count() -> int:
+        try:
+            return len(chat_store.load_memory(_project_name()).get("facts") or [])
+        except Exception:  # noqa: BLE001
+            return 0
+
+    def epoch(value: Any) -> float:
+        try:
+            number = float(value or 0)
+        except (TypeError, ValueError):
+            return 0.0
+        return number / 1000.0 if number > 1e12 else number
+
+    async def latest_session(project: str) -> str:
+        if not project:
+            return ""
+        try:
+            result = await client.request("session/list", {"cwd": _ROOT}, timeout=30)
+        except Exception:  # noqa: BLE001
+            return ""
+        candidates = []
+        for item in (result or {}).get("sessions") or []:
+            sid = str(item.get("sessionId") or "")
+            if not sid:
+                continue
+            meta = _session_meta(sid)
+            if meta.get("hidden"):
+                continue
+            if str(meta.get("project") or "").strip() != project:
+                continue
+            updated = max(epoch(meta.get("updatedAt")), epoch(item.get("updatedAt")))
+            transcript = chat_store.load_transcript(sid)
+            strong = bool(meta.get("title") or transcript.get("messages"))
+            candidates.append((updated, 1 if strong else 0, sid))
+        if not candidates:
+            return ""
+        strong = [item for item in candidates if item[1]]
+        pool = strong or candidates
+        return max(pool, key=lambda item: item[0])[2]
+
+    async def refresh_sessions() -> None:
+        try:
+            result = await client.request("session/list", {"cwd": _ROOT}, timeout=30)
+            items = []
+            for item in (result or {}).get("sessions") or []:
+                meta = _session_meta(item.get("sessionId") or "")
+                if meta.get("hidden"):
+                    continue
+                items.append({
+                    **item,
+                    "title": meta.get("title") or "",
+                    "project": meta.get("project") or "",
+                    "updatedAt": meta.get("updatedAt") or item.get("updatedAt") or 0,
+                })
+            await send({"type": "sessions", "items": items})
+        except Exception:  # noqa: BLE001
+            pass
+
+    def finish_turn(project: str, title: str, error: str = "") -> None:
+        if not turn.get("active"):
+            return
+        data = turn.get("transcript") or {}
+        assistant_text = ""
+        message_id = str(turn.get("assistant_id") or "")
+        if error:
+            if not message_id:
+                message_id = "a-" + uuid.uuid4().hex[:12]
+                data.setdefault("messages", []).append({
+                    "id": message_id,
+                    "role": "assistant",
+                    "text": "对话失败：" + error,
+                    "error": True,
+                    "at": time.time(),
+                })
+            else:
+                for item in data.get("messages") or []:
+                    if item.get("id") == message_id:
+                        item["error"] = True
+                        if not item.get("text"):
+                            item["text"] = "对话失败：" + error
+                        break
+        for item in data.get("messages") or []:
+            if item.get("id") == message_id:
+                item["streaming"] = False
+                assistant_text = str(item.get("text") or "")
+                break
+        try:
+            chat_store.save_transcript(session_id, data)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            chat_store.record_turn_memory(
+                project, session_id, title,
+                str(turn.get("user") or ""), assistant_text)
+        except Exception:  # noqa: BLE001
+            pass
+        turn.clear()
+
+    async def run_prompt(text: str) -> None:
+        if not session_id:
+            await send({"type": "error", "message": "会话尚未创建"})
+            return
+        project = _project_name() or "未命名工程"
+        meta = _session_meta(session_id)
+        title = str(meta.get("title") or "").strip() or text[:24]
+        _update_session_meta(
+            session_id, project=project, title=title, lastPrompt=text[:120])
+        if not meta.get("title"):
+            await send({"type": "session_title", "sessionId": session_id, "title": title})
+            await refresh_sessions()
+
+        transcript = chat_store.load_transcript(session_id)
+        transcript["project"] = project
+        transcript["title"] = transcript.get("title") or title
+        prompt_text = text
+        injected = False
+        if is_new_session and int(transcript.get("promptCount") or 0) == 0:
+            try:
+                block = chat_store.context_block(project)
+            except Exception:  # noqa: BLE001
+                block = ""
+            if block:
+                prompt_text = block + "\n\n【用户当前请求】\n" + text
+                injected = True
+
+        user_message = {
+            "id": "u-" + uuid.uuid4().hex[:12],
+            "role": "user",
+            "text": text,
+            "at": time.time(),
+        }
+        transcript.setdefault("messages", []).append(user_message)
+        transcript["promptCount"] = int(transcript.get("promptCount") or 0) + 1
+        transcript["summary"] = ""
+        turn.clear()
+        turn.update({
+            "active": True,
+            "user": text,
+            "assistant_id": "",
+            "transcript": transcript,
+            "last_save": time.time(),
+            "injected": injected,
+            "started": time.time(),
+        })
+        try:
+            chat_store.save_transcript(session_id, transcript)
+        except Exception:  # noqa: BLE001
+            pass
+
+        await send({"type": "prompt_start"})
+        try:
+            result = await client.request(
+                "session/prompt",
+                {"sessionId": session_id,
+                 "prompt": [{"type": "text", "text": prompt_text}]},
+                timeout=1800,
+            )
+            finish_turn(project, title)
+            await send({"type": "prompt_end",
+                        "stopReason": (result or {}).get("stopReason", "end_turn")})
+        except Exception as exc:  # noqa: BLE001
+            message = str(exc)
+            finish_turn(project, title, error=message)
+            await send({"type": "error", "message": message})
+        finally:
+            await refresh_sessions()
+
+    try:
+        await client.start()
+        await client.request("initialize", {"protocolVersion": 1, "clientCapabilities": {}}, timeout=60)
+        project = _project_name()
+        resumed = False
+        auto_resume = str(websocket.query_params.get("resume") or "1") != "0"
+        if auto_resume:
+            target = await latest_session(project)
+            if target:
+                try:
+                    result = await client.request(
+                        "session/resume",
+                        {"sessionId": target, "cwd": _ROOT, "mcpServers": _mcp_servers()},
+                        timeout=120,
+                    )
+                    session_id = target
+                    resumed = True
+                    is_new_session = False
+                    _update_session_meta(session_id, project=project)
+                except Exception:  # noqa: BLE001
+                    session_id = ""
+        if not session_id:
+            session = await client.request(
+                "session/new", {"cwd": _ROOT, "mcpServers": _mcp_servers()}, timeout=120)
+            session_id = session.get("sessionId") or ""
+            resumed = False
+            is_new_session = True
+            if session_id and not _session_meta(session_id).get("project"):
+                _update_session_meta(session_id, project=project)
+            config_options = (session or {}).get("configOptions") or []
+        else:
+            config_options = (result or {}).get("configOptions") or []
+
+        await send({
+            "type": "ready",
+            "sessionId": session_id,
+            "title": _session_meta(session_id).get("title") or "",
+            "project": project,
+            "configOptions": config_options,
+            "user": username,
+            "resumed": resumed,
+            "history": history_view(session_id),
+            "memoryCount": memory_count(),
+        })
+        await refresh_sessions()
+
+        while True:
+            message = await websocket.receive_json()
+            kind = message.get("type")
+            if kind == "prompt":
+                text = str(message.get("text") or "").strip()
+                if not text:
+                    continue
+                if prompt_task and not prompt_task.done():
+                    await send({"type": "error", "message": "当前回合尚未结束"})
+                    continue
+                prompt_task = asyncio.create_task(run_prompt(text))
+            elif kind == "cancel":
+                try:
+                    await client.notify("session/cancel", {"sessionId": session_id})
+                except Exception:  # noqa: BLE001
+                    pass
+            elif kind == "permission_response":
+                future = pending_permissions.get(str(message.get("id")))
+                if future and not future.done():
+                    future.set_result("allow-once" if message.get("allow") else "reject-once")
+            elif kind == "set_model":
+                try:
+                    result = await client.request(
+                        "session/set_config_option",
+                        {"sessionId": session_id, "configId": "model", "value": message.get("value")},
+                        timeout=60,
+                    )
+                    await send({"type": "config", "configOptions": (result or {}).get("configOptions") or []})
+                except Exception as exc:  # noqa: BLE001
+                    await send({"type": "error", "message": str(exc)})
+            elif kind == "new_session":
+                if prompt_task and not prompt_task.done():
+                    await send({"type": "error", "message": "当前回合尚未结束，请先停止或等待完成"})
+                    continue
+                session = await client.request(
+                    "session/new", {"cwd": _ROOT, "mcpServers": _mcp_servers()}, timeout=120)
+                session_id = session.get("sessionId") or ""
+                project = _project_name()
+                is_new_session = True
+                turn.clear()
+                if session_id and not _session_meta(session_id).get("project"):
+                    _update_session_meta(session_id, project=project)
+                await send({
+                    "type": "ready", "sessionId": session_id,
+                    "title": _session_meta(session_id).get("title") or "",
+                    "project": project,
+                    "configOptions": session.get("configOptions") or [],
+                    "user": username,
+                    "resumed": False,
+                    "history": history_view(session_id),
+                    "memoryCount": memory_count(),
+                })
+                await refresh_sessions()
+            elif kind == "rename_session":
+                target = str(message.get("sessionId") or "")
+                title = str(message.get("title") or "").strip()
+                if target and title:
+                    _update_session_meta(target, title=title[:40])
+                    await send({"type": "session_title", "sessionId": target, "title": title[:40]})
+                    await refresh_sessions()
+            elif kind == "delete_session":
+                target = str(message.get("sessionId") or "")
+                if not target:
+                    continue
+                if target == session_id:
+                    await send({"type": "error", "message": "不能删除当前正在使用的会话"})
+                    continue
+                _hide_session(target)
+                await refresh_sessions()
+            elif kind == "resume":
+                target = str(message.get("sessionId") or "")
+                if not target:
+                    continue
+                if prompt_task and not prompt_task.done():
+                    await send({"type": "error", "message": "当前回合尚未结束，请先停止或等待完成"})
+                    continue
+                try:
+                    if session_id:
+                        try:
+                            await client.request("session/close", {"sessionId": session_id}, timeout=30)
+                        except Exception:  # noqa: BLE001
+                            pass
+                    result = await client.request(
+                        "session/resume",
+                        {"sessionId": target, "cwd": _ROOT, "mcpServers": _mcp_servers()},
+                        timeout=120,
+                    )
+                    session_id = target
+                    is_new_session = False
+                    turn.clear()
+                    _update_session_meta(session_id, project=_project_name())
+                    await send({
+                        "type": "resumed", "sessionId": target,
+                        "title": _session_meta(target).get("title") or "",
+                        "project": _session_meta(target).get("project") or _project_name(),
+                        "configOptions": (result or {}).get("configOptions") or [],
+                        "history": history_view(session_id),
+                        "memoryCount": memory_count(),
+                    })
+                    await refresh_sessions()
+                except Exception as exc:  # noqa: BLE001
+                    await send({"type": "error", "message": "恢复会话失败：" + str(exc)})
+    except WebSocketDisconnect:
+        pass
+    except Exception as exc:  # noqa: BLE001
+        try:
+            await send({"type": "error", "message": str(exc)})
+        except Exception:  # noqa: BLE001
+            pass
+    finally:
+        if prompt_task and not prompt_task.done():
+            prompt_task.cancel()
+        await client.close()

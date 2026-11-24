@@ -1,0 +1,21 @@
+# 把本片段合并到 DSH profile 的 cordis.patch.yml（数组末尾追加）
+# 实际位置示例：C:\Users\Administrator\.dsh\profiles\desktop\cordis.patch.yml
+# 重启 DSH 后工具会以 mcp__structural_inspection__<tool> 出现。
+# 使用前请先启动 webapp/backend（默认 127.0.0.1:8765）。
+- insert:
+    - id: structural-inspection-mcp
+      name: "@deepseek-ai/dsh-mcp-client"
+      config:
+        serverName: structural_inspection
+        transport: stdio
+        command: 'C:\Program Files\python\python.exe'
+        args:
+          - '-u'
+          - 'C:\Users\Administrator\Desktop\structural_inspection\webapp\mcp_server.py'
+        cwd: 'C:\Users\Administrator\Desktop\structural_inspection'
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: '1'
+          STRUCTURAL_API_BASE: 'http://127.0.0.1:8765/api'
+        toolCallTimeoutMs: 600000
+        failOnStartupError: false

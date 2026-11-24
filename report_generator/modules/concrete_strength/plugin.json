@@ -1,0 +1,155 @@
+{
+  "schema": "structural.item/1",
+  "id": "concrete_strength",
+  "name": "混凝土抗压强度检测",
+  "structure_type": "混凝土结构",
+  "tree_order": 10,
+  "source": "python",
+  "items": [
+    {
+      "key": "回弹法检测(主要来源为仪器数据，可选用)",
+      "columns_key": "回弹法检测",
+      "family": "rebound",
+      "description": "回弹仪测区换算值汇总到构件级，输出单构件推定值或批量批评定值。",
+      "components": ["梁", "墙", "柱", "基础"],
+      "columns": ["构件名称", "构件轴号", "设计强度等级", "平均强度值(MPa)", "标准差(MPa)", "最小测区强度值(MPa)", "强度推定值(MPa)", "龄期(d)", "楼层"],
+      "column_types": ["string", "string", "string", "float", "float", "float", "float", "float", "string"],
+      "calc_rules": {},
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "validators": ["zone_count_lt10_use_min", "strength_lt10_fail"],
+        "importers": [
+          {
+            "kind": "excel",
+            "header_aliases": {
+              "构件名称": ["构件位置及名称", "构件"],
+              "构件轴号": ["轴线编号", "轴线"],
+              "平均强度值(MPa)": ["平均强度值", "平均值"],
+              "标准差(MPa)": ["标准差"],
+              "最小测区强度值(MPa)": ["最小测区强度值", "最小值"],
+              "强度推定值(MPa)": ["强度推定值", "推定值"]
+            }
+          },
+          {"kind": "word_table", "anchor": "回弹法检测原始记录"},
+          {"kind": "scan", "target": "rebound_zones"}
+        ]
+      },
+      "assessment": {
+        "spec": "rebound",
+        "family": "rebound",
+        "input": "raw_components"
+      },
+      "equipment": ["混凝土回弹仪"],
+      "original_record": {"template": "rebound"},
+      "report": {"chapter": "四、检测内容", "result_group": "混凝土抗压强度"},
+      "skill": {
+        "slug": "concrete-rebound",
+        "description": "混凝土抗压强度（回弹法）检测：录入测区换算值、单构件推定值、批次统计与结论、生成报告与原始记录。",
+        "when_to_use": "用户要采集或导入回弹法数据、判定强度是否满足设计要求、核对推定值与批量批结论时。"
+      }
+    },
+    {
+      "key": "钻芯法检测",
+      "columns_key": "钻芯法检测",
+      "family": "core",
+      "description": "按构件钻取芯样，测试荷载换算强度，构件取最小值作推定值，批次按批推定值评定。",
+      "components": ["梁", "柱", "板", "剪力墙", "基础"],
+      "columns": ["楼栋", "批次", "构件编号", "构件位置及名称", "轴线编号", "序号", "芯样直径(mm)", "截面积(mm²)", "测试荷载(kN)", "测试强度(MPa)", "推定值(MPa)", "批评定值(MPa)", "设计等级", "楼层"],
+      "column_types": ["string", "string", "string", "string", "string", "string", "float", "float", "float", "float", "float", "float", "string", "string"],
+      "calc_rules": {},
+      "collect": {
+        "params": [
+          {"key": "building", "label": "楼栋", "type": "string", "required": true, "default": "1#"},
+          {"key": "components", "label": "构件数", "type": "int", "required": true, "default": 10, "min": 1, "max": 200},
+          {"key": "samples_per_component", "label": "每构件芯样数", "type": "int", "required": true, "default": 2, "min": 1, "max": 20},
+          {"key": "sample_start", "label": "芯样起始编号", "type": "int", "required": false, "default": 1},
+          {"key": "grade", "label": "设计强度等级", "type": "string", "required": true, "default": "C30", "note": "如 C30；缺设计值则按无图纸结论"},
+          {"key": "diameter", "label": "芯样直径(mm)", "type": "float", "required": true, "default": 100, "options": [70, 100], "note": "影响 k1/k2 系数查表"},
+          {"key": "method", "label": "评定方式", "type": "enum", "options": ["batch", "single"], "default": "batch", "note": "batch=批评定，single=单构件"},
+          {"key": "batches", "label": "批次数量", "type": "int", "required": false, "default": 1, "min": 1, "max": 50}
+        ],
+        "layout": "components_x_samples",
+        "entry": "setup_dialog",
+        "validators": ["core_diameter_positive", "batch_min_count_15"],
+        "importers": [
+          {
+            "kind": "excel",
+            "header_aliases": {
+              "构件位置及名称": ["构件名称", "构件位置"],
+              "轴线编号": ["轴线", "构件轴号"],
+              "测试荷载(kN)": ["测试荷载", "荷载"],
+              "测试强度(MPa)": ["测试强度", "强度"],
+              "设计等级": ["设计强度等级", "强度等级"]
+            }
+          },
+          {"kind": "word_table", "anchor": "钻芯法检测原始记录"},
+          {"kind": "scan", "target": "core_drilling"}
+        ]
+      },
+      "assessment": {
+        "spec": "core",
+        "family": "core",
+        "input": "sheet_rows"
+      },
+      "equipment": ["微控电液伺服压力试验机", "游标卡尺"],
+      "original_record": {"template": "core"},
+      "report": {"chapter": "四、检测内容", "result_group": "混凝土抗压强度"},
+      "skill": {
+        "slug": "concrete-core-drilling",
+        "description": "混凝土抗压强度（钻芯法）检测：建表参数、芯样强度换算、构件推定值、批次批评定与结论、生成报告与原始记录。",
+        "when_to_use": "用户要建钻芯法采集表、录入芯样直径/荷载、做批评定或核对钻芯结论时。"
+      }
+    },
+    {
+      "key": "回弹钻芯修正法检测",
+      "columns_key": "回弹钻芯修正法检测",
+      "family": "rebound_core",
+      "description": "回弹测区值与芯样实测强度成对修正，输出修正后的强度与结论。",
+      "components": ["梁", "柱", "板", "剪力墙", "基础"],
+      "columns": ["楼栋", "批次", "构件编号", "构件位置及名称", "构件轴线编号", "钻芯测区", "芯样直径(mm)", "截面积(mm²)", "测试荷载(kN)", "测试强度(MPa)", "设计强度等级", "芯样强度均值(MPa)", "楼层"],
+      "column_types": ["string", "string", "string", "string", "string", "string", "float", "float", "float", "float", "string", "float", "string"],
+      "calc_rules": {},
+      "collect": {
+        "params": [
+          {"key": "building", "label": "楼栋", "type": "string", "required": true, "default": "1#"},
+          {"key": "batches", "label": "批次数量", "type": "int", "required": true, "default": 1, "min": 1, "max": 50},
+          {"key": "components_per_batch", "label": "每批次构件数", "type": "int", "required": true, "default": 5, "min": 1, "max": 100},
+          {"key": "zones_per_component", "label": "每构件测区数", "type": "int", "required": true, "default": 3, "min": 1, "max": 20},
+          {"key": "grade", "label": "设计强度等级", "type": "string", "required": true, "default": "C40"},
+          {"key": "diameter", "label": "芯样直径(mm)", "type": "float", "required": true, "default": 100, "options": [70, 100]}
+        ],
+        "layout": "components_x_zones",
+        "entry": "setup_dialog",
+        "validators": ["core_pair_required", "batch_min_count_6"],
+        "importers": [
+          {
+            "kind": "excel",
+            "header_aliases": {
+              "构件轴线编号": ["轴线编号", "轴线"],
+              "芯样直径(mm)": ["芯样直径", "直径"],
+              "设计强度等级": ["设计等级", "强度等级"],
+              "芯样强度均值(MPa)": ["芯样强度均值", "芯样均值"]
+            }
+          },
+          {"kind": "word_table", "anchor": "回弹钻芯修正法原始记录"},
+          {"kind": "scan", "target": "rebound_core"}
+        ]
+      },
+      "assessment": {
+        "spec": "rebound_core",
+        "family": "rebound_core",
+        "input": "raw_components"
+      },
+      "equipment": ["混凝土回弹仪", "微控电液伺服压力试验机"],
+      "original_record": {"template": "rebound_core"},
+      "report": {"chapter": "四、检测内容", "result_group": "混凝土抗压强度"},
+      "skill": {
+        "slug": "concrete-rebound-core",
+        "description": "混凝土抗压强度（回弹-钻芯修正法）检测：回弹测区与芯样实测值成对修正（修正量法/修正系数法）、批量评定与结论。",
+        "when_to_use": "用户要做回弹钻芯修正法数据录入、修正计算、批量评定或核对修正后结论时。"
+      }
+    }
+  ]
+}

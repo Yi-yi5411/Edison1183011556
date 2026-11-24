@@ -1,0 +1,20 @@
+{
+  "name": "dsh-structural-write-gate",
+  "description": "结构检测写操作审批门禁：MCP 写工具执行前经 approval seam 弹窗确认",
+  "version": "0.1.4",
+  "type": "module",
+  "main": "lib/index.js",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    }
+  }
+}

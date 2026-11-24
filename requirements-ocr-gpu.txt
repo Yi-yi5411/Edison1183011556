@@ -1,0 +1,16 @@
+# GPU OCR 服务（独立 Python 3.12 环境，不要装进主程序 3.8）
+# 安装：
+#   python -m pip install -r requirements-ocr-gpu.txt
+# 或使用 scripts/setup_ocr_gpu.ps1（推荐，含 cu129 源与镜像回退）
+--extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cu129/
+paddlepaddle-gpu==3.3.1
+# CUDA 12.9 运行时（paddlepaddle-gpu 的依赖，显式列出便于离线核对）
+nvidia-cuda-runtime-cu12==12.9.37
+nvidia-cudnn-cu12==9.9.0.52
+nvidia-nvjitlink-cu12==12.9.86
+nvidia-cublas-cu12==12.9.0.13
+nvidia-cufft-cu12==11.4.0.6
+nvidia-curand-cu12==10.3.10.19
+nvidia-cusolver-cu12==11.7.4.40
+nvidia-cusparse-cu12==12.5.9.5
+paddleocr==3.7.0

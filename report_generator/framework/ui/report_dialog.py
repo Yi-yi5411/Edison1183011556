@@ -6,40 +6,22 @@
 确定后返回 dict（键见 report_template_map.REPORT_INFO_FIELDS）。
 """
 from PyQt5.QtWidgets import (
-    QCheckBox, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QDialogButtonBox, QFrame, QFormLayout,
 )
 
 from report_generator.utils.report_template_map import REPORT_INFO_FIELDS
 
 
-def agent_default_enabled():
-    """Agent 模式默认勾选状态（读 report_agent.enabled，异常时默认开）。"""
-    try:
-        from report_generator.scan_recognition.config import Config
-    except ImportError:
-        try:
-            from scan_recognition.config import Config
-        except ImportError:
-            return True
-    try:
-        data = Config.load().data or {}
-        return bool((data.get("report_agent") or {}).get("enabled", True))
-    except Exception:
-        return True
-
-
 class ReportInfoDialog(QDialog):
     """报告抬头信息对话框。"""
 
-    def __init__(self, prefill=None, checked_items=None, parent=None,
-                 default_use_agent=None):
+    def __init__(self, prefill=None, checked_items=None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("生成检测报告 — 抬头信息")
         self.resize(520, 520)
         self._prefill = dict(prefill or {})
         self._checked_items = list(checked_items or [])
-        self._default_use_agent = default_use_agent
         self._edits = {}
         self._setup_ui()
 
@@ -76,16 +58,6 @@ class ReportInfoDialog(QDialog):
         hint.setStyleSheet("color: gray;")
         root.addWidget(hint)
 
-        # Agent 模式开关（LLM 编排生成；失败自动回退普通生成）
-        self._agent_cb = QCheckBox(
-            "Agent 模式（Ollama 大模型编排生成，失败自动回退普通生成）")
-        if self._default_use_agent is None:
-            self._agent_cb.setChecked(agent_default_enabled())
-        else:
-            self._agent_cb.setChecked(bool(self._default_use_agent))
-        self._agent_cb.setStyleSheet("color: #555;")
-        root.addWidget(self._agent_cb)
-
         # 按钮
         btn_row = QHBoxLayout()
         btn_row.addStretch(1)
@@ -103,6 +75,3 @@ class ReportInfoDialog(QDialog):
         return {key: self._edits[key].text().strip()
                 for key, _label, _default in REPORT_INFO_FIELDS}
 
-    def use_agent(self):
-        """是否启用 Agent 模式（LLM 编排生成）。"""
-        return self._agent_cb.isChecked()

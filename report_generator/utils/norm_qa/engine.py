@@ -16,6 +16,7 @@ import sqlite3
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from .catalog import codes_for_items, expand_keywords, match_db_codes
 from .store import get_db_path
 
 RE_CLAUSE_NUM = re.compile(r"\d{1,2}\.\d{1,2}(?:\.\d{1,2})?")
@@ -40,29 +41,48 @@ class NormQueryEngine(object):
         self.db_path = Path(db_path) if db_path else get_db_path()
 
     # ── 查询路由 ──
-    def query(self, question: str) -> Dict:
-        """统一查询入口。返回：
+    def query(self, question: str, detection_items=None) -> Dict:
+        """统一查询入口。
+
+        detection_items 传入时，优先只在该项目的依据规范里检索；检索不到会
+        自动去掉过滤再搜一次，并用 filtered_out 标记，避免「问到了却查不到」。
+
+        返回：
         {"type": "exact"|"search"|"candidates"|"empty",
-         "clauses": [..], "candidates": [..], "query": 原查询}
+         "clauses": [..], "candidates": [..], "query": 原查询,
+         "detection_items": [..], "codes": [该项目依据规范],
+         "filter_codes": [实际生效的库内代号], "filter_applied": bool,
+         "filtered_out": bool}
         """
         q = (question or "").strip()
+        items = [str(i) for i in (detection_items or []) if str(i).strip()]
+        codes = codes_for_items(items) if items else []
+        base = {"query": q, "detection_items": items, "codes": codes,
+                "filter_codes": [], "filter_applied": False,
+                "filtered_out": False}
         if not q:
-            return {"type": "empty", "clauses": [], "candidates": [], "query": q}
+            return dict(base, type="empty", clauses=[], candidates=[])
 
         nums = RE_CLAUSE_NUM.findall(q)
         if nums:
             clauses = self.exact_lookup(nums)
             if clauses:
-                return {"type": "exact", "clauses": clauses,
-                        "candidates": [], "query": q}
+                return dict(base, type="exact", clauses=clauses, candidates=[])
 
-        clauses = self.search(q)
+        filter_codes = match_db_codes(codes, self.db_path) if codes else []
+        clauses = self.search(q, detection_items=items)
+        filtered_out = False
+        if not clauses and filter_codes:
+            clauses = self.search(q)
+            filtered_out = bool(clauses)
         if clauses:
-            return {"type": "search", "clauses": clauses,
-                    "candidates": [], "query": q}
-
-        return {"type": "candidates", "clauses": [],
-                "candidates": self.suggest_candidates(q), "query": q}
+            return dict(base, type="search", clauses=clauses, candidates=[],
+                        filter_codes=filter_codes,
+                        filter_applied=bool(filter_codes),
+                        filtered_out=filtered_out)
+        return dict(base, type="candidates", clauses=[],
+                    candidates=self.suggest_candidates(q),
+                    filter_codes=filter_codes)
 
     # ── 条号精确 ──
     def exact_lookup(self, nums: List[str]) -> List[Dict]:
@@ -94,58 +114,118 @@ class NormQueryEngine(object):
             conn.close()
 
     # ── 自然语言检索 ──
-    def search(self, question: str) -> List[Dict]:
+    def search(self, question: str, detection_items=None) -> List[Dict]:
+        """关键词扩展 → FTS(bm25 排序) → LIKE 兜底，可按检测项目的规范过滤。"""
         keywords = self.extract_keywords(question)
         if not keywords:
             return []
-        clauses = self.fts_search(keywords)
+        expanded = expand_keywords(keywords)
+        db_codes = None
+        if detection_items:
+            wanted = codes_for_items(detection_items)
+            if wanted:
+                db_codes = match_db_codes(wanted, self.db_path) or None
+        clauses = self.fts_search(expanded, db_codes=db_codes, primary=keywords)
         if clauses:
             return clauses
-        return self.like_search(keywords)
+        return self.like_search(expanded, db_codes=db_codes, primary=keywords)
 
-    def fts_search(self, keywords: List[str]) -> List[Dict]:
-        """FTS5 MATCH：关键词 OR 连接（对英文/数字条目有效）。"""
-        terms = ' OR '.join('"%s"' % k.replace('"', "") for k in keywords[:8])
+    @staticmethod
+    def _code_where(db_codes):
+        """生成代号过滤片段与参数；无过滤时返回空串。"""
+        if not db_codes:
+            return "", []
+        return (" AND c.code IN (%s)" % ",".join("?" * len(db_codes)),
+                list(db_codes))
+
+    def fts_search(self, keywords: List[str], db_codes=None,
+                   primary=None) -> List[Dict]:
+        """FTS5 MATCH：关键词 OR 连接，按 bm25 相关度排序后统一重排。"""
+        terms = ' OR '.join('"%s"' % k.replace('"', "")
+                            for k in keywords[:12])
+        where, params = self._code_where(db_codes)
+        sql = ("SELECT c.*, bm25(clauses_fts) AS _rank"
+               " FROM clauses_fts f JOIN clauses c ON c.id = f.rowid"
+               " WHERE clauses_fts MATCH ?" + where +
+               " ORDER BY _rank LIMIT ?;")
+        rows: List[Dict] = []
         conn = self._connect()
         try:
             cur = conn.cursor()
-            cur.execute(
-                "SELECT c.* FROM clauses_fts f JOIN clauses c ON c.id = f.rowid"
-                " WHERE clauses_fts MATCH ? LIMIT ?;", (terms, MAX_LIKE_HITS))
-            rows = [self._row_to_dict(c) for c in cur.fetchall()]
-        except sqlite3.OperationalError:
-            rows = []
+            try:
+                cur.execute(sql, [terms] + params + [MAX_LIKE_HITS])
+                rows = [self._row_to_dict(c) for c in cur.fetchall()]
+            except sqlite3.OperationalError:
+                # 老 SQLite 无 bm25：退回不带相关度排序的查询
+                fallback = ("SELECT c.* FROM clauses_fts f JOIN clauses c"
+                            " ON c.id = f.rowid WHERE clauses_fts MATCH ?"
+                            + where + " LIMIT ?;")
+                try:
+                    cur.execute(fallback, [terms] + params + [MAX_LIKE_HITS])
+                    rows = [self._row_to_dict(c) for c in cur.fetchall()]
+                except sqlite3.OperationalError:
+                    rows = []
         finally:
             conn.close()
-        return self._rescore(rows, keywords)
+        return self._rescore(rows, primary or keywords, keywords)
 
-    def like_search(self, keywords: List[str]) -> List[Dict]:
+    def like_search(self, keywords: List[str], db_codes=None,
+                    primary=None) -> List[Dict]:
         """LIKE 降级：逐条按命中关键词数评分（标题命中加权）。"""
+        where, params = self._code_where(db_codes)
         conn = self._connect()
         try:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM clauses;")
+            cur.execute("SELECT c.* FROM clauses c WHERE 1=1" + where + ";",
+                        params)
             rows = [self._row_to_dict(c) for c in cur.fetchall()]
         finally:
             conn.close()
-        return self._rescore(rows, keywords)
+        return self._rescore(rows, primary or keywords, keywords)
 
-    def _rescore(self, rows: List[Dict], keywords: List[str]) -> List[Dict]:
+    def _rescore(self, rows: List[Dict], primary: List[str],
+                 secondary=None) -> List[Dict]:
+        """统一打分：用户原词权重高、扩展词低、整串命中额外加分。
+
+        分数相同时按 bm25 名次、规范代号、条号排序，结果稳定可复现。
+        """
+        primary = [k for k in (primary or []) if k]
+        secondary = [k for k in (secondary or []) if k]
+        phrase = primary[0] if primary else ""
         scored = []
         for row in rows:
             title = row.get("title") or ""
             body = row.get("body") or ""
             hits = 0
-            for kw in keywords:
+            matched: List[str] = []
+            for kw in primary:
                 if kw in title:
-                    hits += 2
+                    hits += 3
+                    matched.append(kw)
                 elif kw in body:
+                    hits += 2
+                    matched.append(kw)
+            for kw in secondary:
+                if kw in primary:
+                    continue
+                if kw in title or kw in body:
                     hits += 1
-            if hits > 0:
-                row["score"] = hits
-                scored.append(row)
-        scored.sort(key=lambda r: (-r["score"], r.get("code") or "",
-                                   _chapter_key(r.get("chapter") or "")))
+                    matched.append(kw)
+            if len(phrase) >= 4 and phrase in body:
+                hits += 4
+                matched.append(phrase)
+            if hits <= 0:
+                continue
+            row["score"] = hits
+            row["matched_terms"] = list(dict.fromkeys(matched))[:8]
+            rank = row.pop("_rank", None)
+            row["rank"] = rank
+            scored.append(row)
+        scored.sort(key=lambda r: (
+            -r["score"],
+            r["rank"] if r.get("rank") is not None else 1e9,
+            r.get("code") or "",
+            _chapter_key(r.get("chapter") or "")))
         return scored[:MAX_LIKE_HITS]
 
     # ── 术语候选 ──

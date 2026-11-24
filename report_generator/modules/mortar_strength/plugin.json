@@ -1,0 +1,102 @@
+{
+  "schema": "structural.item/1",
+  "id": "mortar_strength",
+  "name": "砌筑砂浆强度检测（贯入法）",
+  "structure_type": "砖混结构",
+  "tree_order": 10,
+  "source": "python",
+  "items": [
+    {
+      "key": "砌筑砂浆强度检测",
+      "columns_key": "砌筑砂浆强度检测",
+      "family": "record_check",
+      "description": "砌筑砂浆强度检测（贯入法） · 砌筑砂浆强度检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件编号",
+        "构件位置及名称",
+        "设计强度等级",
+        "测点1贯入深度(mm)",
+        "测点2贯入深度(mm)",
+        "测点3贯入深度(mm)",
+        "平均贯入深度(mm)",
+        "强度换算值(MPa)",
+        "设计要求(MPa)",
+        "结论",
+        "备注"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {
+        "7": {
+          "type": "avg",
+          "sources": [
+            4,
+            5,
+            6
+          ],
+          "decimals": 2
+        },
+        "10": {
+          "type": "col_conclusion",
+          "pairs": [
+            {
+              "left_col": 8,
+              "op": ">=",
+              "right_col": 9
+            }
+          ],
+          "conclusion_pass": "符合要求",
+          "conclusion_fail": "不符合要求"
+        }
+      },
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "砌筑砂浆强度检测"
+          }
+        ]
+      },
+      "equipment": [
+        "贯入式砂浆强度检测仪"
+      ],
+      "original_record": {
+        "template": "builtin_generic"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "砌筑砂浆强度检测"
+      },
+      "skill": {
+        "slug": "mortar-strength",
+        "description": "砌筑砂浆强度检测（贯入法） · 砌筑砂浆强度检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「砌筑砂浆强度检测」数据时。"
+      },
+      "assessment": {
+        "spec": "mortar_strength",
+        "family": "record_check",
+        "input": "sheet_rows"
+      }
+    }
+  ]
+}

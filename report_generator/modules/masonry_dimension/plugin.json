@@ -1,0 +1,94 @@
+{
+  "schema": "structural.item/1",
+  "id": "masonry_dimension",
+  "name": "砌体构件尺寸偏差检测",
+  "structure_type": "砖混结构",
+  "tree_order": 30,
+  "source": "python",
+  "items": [
+    {
+      "key": "砌体构件尺寸偏差检测",
+      "columns_key": "砌体构件尺寸偏差检测",
+      "family": "record_check",
+      "description": "砌体构件尺寸偏差检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件编号",
+        "构件位置及名称",
+        "检测部位",
+        "设计值(mm)",
+        "实测值1(mm)",
+        "实测值2(mm)",
+        "实测值3(mm)",
+        "平均值(mm)",
+        "偏差(mm)",
+        "备注"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string"
+      ],
+      "calc_rules": {
+        "8": {
+          "type": "avg",
+          "sources": [
+            5,
+            6,
+            7
+          ],
+          "decimals": 1
+        },
+        "9": {
+          "type": "deviation",
+          "design_col": 4,
+          "source_col": 8,
+          "force_sign": true
+        }
+      },
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "砌体构件尺寸偏差检测"
+          }
+        ]
+      },
+      "equipment": [
+        "钢卷尺"
+      ],
+      "original_record": {
+        "template": "builtin_generic"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "砌体构件尺寸偏差检测"
+      },
+      "skill": {
+        "slug": "masonry-dimension",
+        "description": "砌体构件尺寸偏差检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「砌体构件尺寸偏差检测」数据时。"
+      },
+      "assessment": {
+        "spec": "masonry_dimension",
+        "family": "record_check",
+        "input": "sheet_rows"
+      }
+    }
+  ]
+}

@@ -6,7 +6,7 @@ rem ============================================
 cd /d "%~dp0"
 
 set SRC=dist
-set OUT=主体结构检测数据管理录入系统V1.0.7z
+set OUT=工程检测harness.7z
 set "SEVENZIP=C:\Program Files\7-Zip\7z.exe"
 if not exist "%SEVENZIP%" set "SEVENZIP=%~dp0tools\7z\7zr.exe"
 

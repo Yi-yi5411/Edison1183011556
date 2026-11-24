@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Word 回弹法检测记录 -> 恩施格式 Excel 转换模块。
 
-将 `省检测中心回弹记录.doc`（实际为 OOXML 压缩包，扩展名为 .doc）解析为
+将 `data/samples/省检测中心回弹记录.doc`（实际为 OOXML 压缩包，扩展名为 .doc）解析为
 16 个构件的回弹记录，并按 `恩施格式.xlsx` 模板逐页写入，实现字段一一对应
 与格式转换。运行时仅依赖 openpyxl，无需 Office / Word COM / xlrd。
 

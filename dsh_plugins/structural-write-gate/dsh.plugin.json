@@ -1,0 +1,9 @@
+{
+  "name": "dsh-structural-write-gate",
+  "description": "结构检测写操作审批门禁：MCP 写工具执行前经 approval seam 弹窗确认",
+  "version": "0.1.4",
+  "entry": {
+    "name": "dsh-structural-write-gate",
+    "inject": []
+  }
+}

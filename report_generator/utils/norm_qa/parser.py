@@ -32,18 +32,60 @@ RE_TXT_CLAUSE_LINE = re.compile(
 RE_TXT_HEADING = re.compile(r"^第?[一二三四五六七八九十\d]{1,3}[章节篇]\s*[、.:：\s]?\s*(.*)$")
 
 
-def split_file_code(filename: str) -> Tuple[str, str]:
-    """文件名按第一个空格拆为 (code, code_name)。
+RE_FILE_CODE = re.compile(
+    r"^\s*(?P<prefix>[A-Za-z]{1,6}(?:\s*/\s*[A-Za-z]{1,4})?)\s*"
+    r"(?P<number>\d{1,6})"
+    r"(?:\s*[-—–_]\s*(?P<year>\d{4}))?"
+    r"[\s、,，:：]*(?P<name>.*)$")
 
-    "JGJ 23-2011 回弹法检测混凝土抗压强度技术规程.md"
-    → ("JGJ", "23-2011 回弹法检测混凝土抗压强度技术规程")
-    注意：仅按"文件名不含扩展名"处理，空格拆分可能不理想，
-    导入时允许调用方覆盖（GUI 中可编辑确认）。
+# 文件名常见的「压平」写法 → 标准代号写法
+CODE_ALIASES = {
+    "JGJT": "JGJ/T",
+    "GBT": "GB/T",
+    "CJJT": "CJJ/T",
+    "CECT": "CECS",
+    "JGJ": "JGJ",
+    "GB": "GB",
+}
+
+
+def normalize_code(text: str) -> str:
+    """把『JGJT 23-2011』『JGJ/T 23-2011』『GB50204-2015』统一成『JGJ/T 23-2011』形式。"""
+    raw = str(text or "").strip()
+    if not raw:
+        return ""
+    match = RE_FILE_CODE.match(raw)
+    if not match:
+        return raw
+    prefix = re.sub(r"\s+", "", match.group("prefix") or "").upper()
+    prefix = CODE_ALIASES.get(prefix, prefix)
+    number = match.group("number") or ""
+    year = match.group("year") or ""
+    code = "%s %s" % (prefix, number) if prefix else number
+    if year:
+        code += "-" + year
+    return code
+
+
+def split_file_code(filename: str) -> Tuple[str, str]:
+    """从文件名拆出 (规范代号, 规范名称)。
+
+    "JGJT 23-2011 回弹法检测混凝土抗压强度技术规程（示例）.md"
+    → ("JGJ/T 23-2011", "回弹法检测混凝土抗压强度技术规程（示例）")
+    "GB 50204-2015 混凝土结构工程施工质量验收规范.md"
+    → ("GB 50204-2015", "混凝土结构工程施工质量验收规范")
+    文件名没有编号时退回「整名作代号、名称为空」，导入时仍可覆盖。
     """
-    stem = Path(filename).stem.strip()
-    parts = stem.split(" ", 1)
-    code = parts[0] if parts and parts[0] else stem
-    code_name = parts[1].strip() if len(parts) > 1 else ""
+    # 用字符串去掉扩展名，不能走 Path：代号里的 "JGJ/T" 斜杠会被当成路径分隔符
+    stem = re.sub(r"\.[A-Za-z0-9]{1,6}$", "", str(filename or "").strip())
+    match = RE_FILE_CODE.match(stem)
+    if not match:
+        return stem, ""
+    code = normalize_code("%s %s" % (match.group("prefix") or "",
+                                     match.group("number") or ""))
+    if match.group("year"):
+        code += "-" + match.group("year")
+    code_name = (match.group("name") or "").strip(" 、,，:：-—")
     return code, code_name
 
 
@@ -53,8 +95,26 @@ def parse_text_to_clauses(text: str, code: str, code_name: str,
     """将一篇规范文本解析为条款列表（fmt: "md" 或 "txt"）。"""
     lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     if fmt == "md":
-        return _parse_md_lines(lines, code, code_name, source_file)
-    return _parse_txt_lines(lines, code, code_name, source_file)
+        records = _parse_md_lines(lines, code, code_name, source_file)
+    else:
+        records = _parse_txt_lines(lines, code, code_name, source_file)
+    return _dedupe_by_chapter(records)
+
+
+def _dedupe_by_chapter(records) -> List[ClauseRecord]:
+    """同一文件内同一条号只保留最后一条。
+
+    正文里的 tags 注释会为同一条号生成额外归属记录；当该条号另有真实标题时，
+    以真实标题（文件内靠后的定义）为准，避免库里出现同号两条。
+    """
+    seen = {}
+    order = []
+    for record in records:
+        key = record.chapter
+        if key not in seen:
+            order.append(key)
+        seen[key] = record
+    return [seen[key] for key in order]
 
 
 def parse_file_to_clauses(file_path, code: str = "", code_name: str = ""

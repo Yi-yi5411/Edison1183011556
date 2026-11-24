@@ -1,0 +1,17 @@
+# DSH profile 片段：盈建科（YJK）MCP 服务
+# 注意：MCP 服务本身用项目主 Python（3.8）运行；真正调用 YJKAPI 时，
+# 它会把脚本交给 [yjk].python（盈建科自带 Python 3.10）执行。
+- insert:
+    - id: yjk-mcp
+      name: "@deepseek-ai/dsh-mcp-client"
+      config:
+        serverName: yjk
+        transport: stdio
+        command: 'C:\Program Files\python\python.exe'
+        args: ['-u', '-m', 'integrations.yjk.mcp_server']
+        cwd: 'C:\Users\Administrator\Desktop\structural_inspection'
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: '1'
+        toolCallTimeoutMs: 900000
+        failOnStartupError: false

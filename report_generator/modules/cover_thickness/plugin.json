@@ -1,0 +1,738 @@
+{
+  "schema": "structural.item/1",
+  "id": "cover_thickness",
+  "name": "保护层厚度检测",
+  "structure_type": "混凝土结构",
+  "tree_order": 40,
+  "source": "python",
+  "items": [
+    {
+      "key": "混凝土梁保护层厚度检测",
+      "columns_key": "混凝土梁保护层厚度检测",
+      "family": "cover",
+      "description": "保护层厚度检测 · 混凝土梁保护层厚度检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件位置及名称",
+        "构件轴线编号",
+        "设计值(mm)",
+        "钢筋根数",
+        "实测值1",
+        "实测值2",
+        "实测值3",
+        "实测值4",
+        "实测值5",
+        "实测值6",
+        "实测值7",
+        "实测值8",
+        "实测值9",
+        "实测值10",
+        "偏差值1",
+        "偏差值2",
+        "偏差值3",
+        "偏差值4",
+        "偏差值5",
+        "偏差值6",
+        "偏差值7",
+        "偏差值8",
+        "偏差值9",
+        "偏差值10",
+        "合格点率",
+        "楼层"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {
+        "15": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 5,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "16": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 6,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "17": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 7,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "18": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 8,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "19": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 9,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "20": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 10,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "21": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 11,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "22": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 12,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "23": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 13,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "24": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 14,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        }
+      },
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "混凝土梁保护层厚度检测"
+          }
+        ]
+      },
+      "equipment": [
+        "一体式钢筋扫描仪",
+        "一体式楼板测厚仪"
+      ],
+      "original_record": {
+        "template": "builtin_cover"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "混凝土梁保护层厚度检测"
+      },
+      "skill": {
+        "slug": "cover-beam",
+        "description": "保护层厚度检测 · 混凝土梁保护层厚度检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「混凝土梁保护层厚度检测」数据时。"
+      },
+      "assessment": {
+        "spec": "cover_beam",
+        "family": "cover",
+        "input": "sheet_rows"
+      }
+    },
+    {
+      "key": "混凝土柱保护层厚度检测",
+      "columns_key": "混凝土柱保护层厚度检测",
+      "family": "cover",
+      "description": "保护层厚度检测 · 混凝土柱保护层厚度检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件位置及名称",
+        "构件轴线编号",
+        "设计值(mm)",
+        "钢筋根数",
+        "实测值1",
+        "实测值2",
+        "实测值3",
+        "实测值4",
+        "实测值5",
+        "实测值6",
+        "实测值7",
+        "实测值8",
+        "实测值9",
+        "实测值10",
+        "偏差值1",
+        "偏差值2",
+        "偏差值3",
+        "偏差值4",
+        "偏差值5",
+        "偏差值6",
+        "偏差值7",
+        "偏差值8",
+        "偏差值9",
+        "偏差值10",
+        "合格点率",
+        "楼层"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {
+        "15": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 5,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "16": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 6,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "17": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 7,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "18": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 8,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "19": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 9,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "20": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 10,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "21": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 11,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "22": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 12,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "23": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 13,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        },
+        "24": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 14,
+          "force_sign": true,
+          "lower": -7,
+          "upper": 10
+        }
+      },
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "混凝土柱保护层厚度检测"
+          }
+        ]
+      },
+      "equipment": [
+        "一体式钢筋扫描仪",
+        "一体式楼板测厚仪"
+      ],
+      "original_record": {
+        "template": "builtin_cover"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "混凝土柱保护层厚度检测"
+      },
+      "skill": {
+        "slug": "cover-column",
+        "description": "保护层厚度检测 · 混凝土柱保护层厚度检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「混凝土柱保护层厚度检测」数据时。"
+      },
+      "assessment": {
+        "spec": "cover_column",
+        "family": "cover",
+        "input": "sheet_rows"
+      }
+    },
+    {
+      "key": "剪力墙保护层厚度检测",
+      "columns_key": "剪力墙保护层厚度检测",
+      "family": "cover",
+      "description": "保护层厚度检测 · 剪力墙保护层厚度检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件位置及名称",
+        "构件轴线编号",
+        "设计值(mm)",
+        "钢筋根数",
+        "实测值1",
+        "实测值2",
+        "实测值3",
+        "实测值4",
+        "实测值5",
+        "实测值6",
+        "实测值7",
+        "实测值8",
+        "实测值9",
+        "实测值10",
+        "偏差值1",
+        "偏差值2",
+        "偏差值3",
+        "偏差值4",
+        "偏差值5",
+        "偏差值6",
+        "偏差值7",
+        "偏差值8",
+        "偏差值9",
+        "偏差值10",
+        "合格点率",
+        "楼层"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {
+        "15": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 5,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "16": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 6,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "17": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 7,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "18": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 8,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "19": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 9,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "20": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 10,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "21": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 11,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "22": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 12,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "23": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 13,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "24": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 14,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        }
+      },
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "剪力墙保护层厚度检测"
+          }
+        ]
+      },
+      "equipment": [
+        "一体式钢筋扫描仪",
+        "一体式楼板测厚仪"
+      ],
+      "original_record": {
+        "template": "builtin_cover"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "剪力墙保护层厚度检测"
+      },
+      "skill": {
+        "slug": "cover-wall",
+        "description": "保护层厚度检测 · 剪力墙保护层厚度检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「剪力墙保护层厚度检测」数据时。"
+      },
+      "assessment": {
+        "spec": "cover_wall",
+        "family": "cover",
+        "input": "sheet_rows"
+      }
+    },
+    {
+      "key": "混凝土板保护层厚度检测",
+      "columns_key": "混凝土板保护层厚度检测",
+      "family": "cover",
+      "description": "保护层厚度检测 · 混凝土板保护层厚度检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "楼栋",
+        "构件位置及名称",
+        "构件轴线编号",
+        "设计值(mm)",
+        "钢筋根数",
+        "实测值1",
+        "实测值2",
+        "实测值3",
+        "实测值4",
+        "实测值5",
+        "实测值6",
+        "实测值7",
+        "实测值8",
+        "实测值9",
+        "实测值10",
+        "偏差值1",
+        "偏差值2",
+        "偏差值3",
+        "偏差值4",
+        "偏差值5",
+        "偏差值6",
+        "偏差值7",
+        "偏差值8",
+        "偏差值9",
+        "偏差值10",
+        "合格点率",
+        "楼层"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {
+        "15": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 5,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "16": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 6,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "17": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 7,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "18": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 8,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "19": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 9,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "20": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 10,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "21": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 11,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "22": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 12,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "23": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 13,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        },
+        "24": {
+          "type": "deviation",
+          "design_col": 3,
+          "source_col": 14,
+          "force_sign": true,
+          "lower": -5,
+          "upper": 8
+        }
+      },
+      "collect": {
+        "params": [],
+        "layout": "records",
+        "entry": "grid",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "混凝土板保护层厚度检测"
+          }
+        ]
+      },
+      "equipment": [
+        "一体式钢筋扫描仪",
+        "一体式楼板测厚仪"
+      ],
+      "original_record": {
+        "template": "builtin_cover"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "混凝土板保护层厚度检测"
+      },
+      "skill": {
+        "slug": "cover-slab",
+        "description": "保护层厚度检测 · 混凝土板保护层厚度检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「混凝土板保护层厚度检测」数据时。"
+      },
+      "assessment": {
+        "spec": "cover_slab",
+        "family": "cover",
+        "input": "sheet_rows"
+      }
+    }
+  ]
+}

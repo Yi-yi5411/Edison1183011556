@@ -1,0 +1,9 @@
+# 本地 OCR 依赖（PaddleOCR）
+# 安装： python -m pip install -r requirements-scan.txt
+#
+# 本项目使用 PaddleOCR 2.8.1 + PP-OCRv4 中文模型，
+# 模型权重放在 data/models/paddleocr/{det,rec,cls}，随项目部署，
+# 首次识别不需要联网下载。若该目录缺失，PaddleOCR 会自动下载到用户缓存。
+paddlepaddle==2.6.2
+paddleocr==2.8.1
+PyMuPDF>=1.24

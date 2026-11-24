@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""主体结构检测数据管理录入系统V1.0 - PyQt5 GUI（类 Excel 电子表格）
+"""工程检测harness - PyQt5 GUI（类 Excel 电子表格）
 
 替代 tkinter 版本的 gui.py，提供完整的 Excel 风格电子表格编辑能力。
 核心特性：基于 QTableWidget.setSpan 的单元格合并。
@@ -50,36 +50,12 @@ from framework.engine.formula import FormulaEngine
 from utils.excel_exporter import export_workbook
 from utils.word_to_excel import convert_word_to_excel
 from utils.word_report import generate_report
-from utils.report_agent import generate_report_via_agent
 from framework.ui.report_dialog import ReportInfoDialog
 from utils.report_template_map import default_report_info
 # 注：通用对话框（批量填充/插入行/函数选择器等）由各 UI Mixin 按需自行 import；
 # 项目专属对话框（如钻芯法参数输入）由 controller.create_setup_dialog 经插件钩子
 # 动态创建，参数确认后的工作表构建由 controller.build_sheet 经插件钩子完成，
 # 框架层不直接 import 任何对话框类或构建方法，实现 UI 与插件解耦。
-
-
-class _ReportWorker(QThread):
-    """报告生成后台线程（Agent 模式含多轮 LLM 调用，不能阻塞 UI）。
-
-    日志经 progress 信号回主线程；结束/失败分别经 succeeded/failed。
-    """
-
-    progress = pyqtSignal(str)
-    succeeded = pyqtSignal(str, dict)   # 输出路径, 结果 dict
-    failed = pyqtSignal(str)
-
-    def __init__(self, fn, output_path, parent=None):
-        super().__init__(parent)
-        self._fn = fn            # fn(on_log) -> 结果 dict
-        self._output_path = output_path
-
-    def run(self):
-        try:
-            result = self._fn(self.progress.emit)
-            self.succeeded.emit(self._output_path, result)
-        except Exception as e:
-            self.failed.emit(str(e))
 
 
 # 右键菜单配置（数据驱动）：描述菜单结构与动作。
@@ -349,7 +325,7 @@ class ReportGeneratorApp(CoreDrillingMixin, SteelRebarMixin,
                          MergeOpsMixin, SelectionMixin,
                          FormatMixin, ClipboardMixin, UndoRedoMixin,
                          RowOpsMixin, EditToolsMixin, CalcRulesMixin):
-    """主体结构检测数据管理录入系统V1.0主应用（PyQt5）"""
+    """工程检测harness主应用（PyQt5）"""
 
     def __init__(self, structure_type=None):
         # structure_type：限定本界面只展示该结构类型的检测项目
@@ -374,7 +350,7 @@ class ReportGeneratorApp(CoreDrillingMixin, SteelRebarMixin,
             self._app_icon = None
 
         self.win = QMainWindow()
-        self.win.setWindowTitle("主体结构检测报告数据管理录入系统V1.0")
+        self.win.setWindowTitle("工程检测harness")
         if self._app_icon is not None:
             self.win.setWindowIcon(self._app_icon)
         self.win.resize(1400, 900)
@@ -419,8 +395,7 @@ class ReportGeneratorApp(CoreDrillingMixin, SteelRebarMixin,
         self._cd_params = {}  # {sheet_key: {"samples_per": int, ...}}
         # 报告抬头信息（生成检测报告弹窗预填，随项目文件保存）
         self._report_info = {}
-        self._use_agent = None          # Agent 模式选择（None=按配置默认）
-        self._report_worker = None      # 报告生成后台线程
+
         # 各检测模块的操作步骤说明由 NotesPanel 内部管理（notes_panel.notes）
 
         # ── 构建 UI ──
@@ -1251,13 +1226,10 @@ class ReportGeneratorApp(CoreDrillingMixin, SteelRebarMixin,
         prefill = default_report_info(proj)
         prefill.update(self._report_info or {})
         dlg = ReportInfoDialog(
-            prefill=prefill, checked_items=list(active.keys()), parent=self.win,
-            default_use_agent=self._use_agent)
+            prefill=prefill, checked_items=list(active.keys()), parent=self.win)
         if dlg.exec_() != QDialog.Accepted:
             return
         self._report_info = dlg.get_values()
-        use_agent = dlg.use_agent()
-        self._use_agent = use_agent
 
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         fp, _ = QFileDialog.getSaveFileName(
@@ -1265,16 +1237,6 @@ class ReportGeneratorApp(CoreDrillingMixin, SteelRebarMixin,
             "Word 文档 (*.docx)",
         )
         if not fp:
-            return
-
-        if use_agent:
-            # Agent 模式：多轮 LLM 工具调用（分钟级），放后台线程防界面冻结
-            try:
-                columns_map = self.controller.build_export_columns(active)
-            except Exception as e:
-                QMessageBox.critical(self.win, "生成失败", str(e))
-                return
-            self._start_report_worker(fp, proj, active, columns_map)
             return
 
         try:
@@ -1298,42 +1260,11 @@ class ReportGeneratorApp(CoreDrillingMixin, SteelRebarMixin,
             QMessageBox.warning(self.win, "正在生成", "报告正在生成中，请稍候。")
             return
 
-        def _run(on_log):
-            return generate_report_via_agent(
-                proj, self._report_info, active, columns_map,
-                checked_order=list(active.keys()), output_path=fp,
-                on_log=on_log)
-
-        self._report_worker = _ReportWorker(_run, fp)
-        self._report_worker.progress.connect(self._status)
-        self._report_worker.succeeded.connect(self._on_report_done)
-        self._report_worker.failed.connect(self._on_report_failed)
-        self._status(f"Agent 模式生成中（LLM 编排，需数分钟，请勿关闭）-> {fp}")
-        self._report_worker.start()
-
-    def _on_report_done(self, fp, result):
-        """生成完成（主线程）：状态栏 + 结果弹窗。"""
-        self._status(f"报告生成成功 -> {fp}")
-        self.controller.bus.emit("report.generated", fp)
-        QMessageBox.information(
-            self.win, "生成成功", self._report_result_message(fp, result))
-
-    def _on_report_failed(self, err):
-        """生成失败（主线程）：Agent 与直接生成均失败时提示。"""
-        self._status("报告生成失败")
-        QMessageBox.critical(self.win, "生成失败", err)
-
     @staticmethod
     def _report_result_message(fp, result):
-        """统一组装结果提示（含生成方式/回退原因/跳过项/列匹配提示）。"""
+        """统一组装结果提示（跳过项/列匹配提示）。"""
         msg = (f"报告已生成：{fp}\n\n"
                f"共填充 {result['tables']} 张检测结果一览表。")
-        if result.get("engine") == "agent":
-            msg += (f"\n\n生成方式：Agent 模式"
-                    f"（{result.get('model', '')}，{result.get('rounds', 0)} 轮工具调用）。")
-        elif result.get("fallback_reason"):
-            msg += (f"\n\nAgent 模式不可用，已自动回退普通生成："
-                    f"{result['fallback_reason']}")
         if result.get("skipped"):
             msg += "\n\n未生成一览表的项目：\n" + "\n".join(result["skipped"])
         if result.get("warnings"):
@@ -1872,7 +1803,7 @@ class ReportGeneratorApp(CoreDrillingMixin, SteelRebarMixin,
     def _show_about(self):
         QMessageBox.about(
             self.win, "关于",
-            "主体结构检测报告数据管理录入系统 V1.0",
+            "工程检测harness",
         )
 
     # ═══════════════════════════════════════════════════════════

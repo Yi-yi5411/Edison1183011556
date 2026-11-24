@@ -1,0 +1,254 @@
+{
+  "schema": "structural.item/1",
+  "id": "brick_strength",
+  "name": "砖强度检测（回弹法）",
+  "structure_type": "砖混结构",
+  "tree_order": 20,
+  "source": "python",
+  "items": [
+    {
+      "key": "砖强度检测",
+      "columns_key": "砖强度检测",
+      "family": "brick",
+      "description": "砖强度检测（回弹法） · 砖强度检测：录入或导入检测数据，按规范评定并生成报告与原始记录。",
+      "components": [],
+      "columns": [
+        "批次",
+        "构件编号",
+        "构件位置及类型",
+        "轴号编号",
+        "测区号",
+        "回弹值1",
+        "回弹值2",
+        "回弹值3",
+        "回弹值4",
+        "回弹值5",
+        "测区平均回弹值",
+        "强度换算值(MPa)",
+        "构件平均强度(MPa)",
+        "批次平均值(MPa)",
+        "方差(MPa²)",
+        "标准差(MPa)",
+        "变异系数",
+        "强度标准值(MPa)",
+        "评定等级",
+        "备注"
+      ],
+      "column_types": [
+        "string",
+        "string",
+        "string",
+        "string",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "float",
+        "string",
+        "string"
+      ],
+      "calc_rules": {
+        "10": {
+          "type": "avg",
+          "sources": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "decimals": 1
+        },
+        "11": {
+          "type": "brick_rebound_strength",
+          "rm_col": 10,
+          "coef_a": 0.02,
+          "coef_b": -0.45,
+          "constant": 1.25,
+          "decimals": 2
+        },
+        "12": {
+          "type": "component_stat",
+          "stat": "avg",
+          "source_col": 11,
+          "batch_col": 0,
+          "component_cols": [
+            1,
+            2,
+            3
+          ],
+          "source_rm_col": 10,
+          "coef_a": 0.02,
+          "coef_b": -0.45,
+          "constant": 1.25,
+          "decimals": 2
+        },
+        "13": {
+          "type": "batch_stat",
+          "stat": "avg",
+          "source_col": 11,
+          "batch_col": 0,
+          "component_cols": [
+            1,
+            2,
+            3
+          ],
+          "source_rm_col": 10,
+          "coef_a": 0.02,
+          "coef_b": -0.45,
+          "constant": 1.25,
+          "decimals": 2
+        },
+        "14": {
+          "type": "batch_stat",
+          "stat": "var",
+          "source_col": 11,
+          "batch_col": 0,
+          "component_cols": [
+            1,
+            2,
+            3
+          ],
+          "source_rm_col": 10,
+          "coef_a": 0.02,
+          "coef_b": -0.45,
+          "constant": 1.25,
+          "sum_squares": true,
+          "decimals": 2
+        },
+        "15": {
+          "type": "batch_stat",
+          "stat": "std",
+          "source_col": 11,
+          "batch_col": 0,
+          "component_cols": [
+            1,
+            2,
+            3
+          ],
+          "source_rm_col": 10,
+          "coef_a": 0.02,
+          "coef_b": -0.45,
+          "constant": 1.25,
+          "decimals": 2
+        },
+        "16": {
+          "type": "batch_stat",
+          "stat": "cv",
+          "source_col": 11,
+          "batch_col": 0,
+          "component_cols": [
+            1,
+            2,
+            3
+          ],
+          "source_rm_col": 10,
+          "coef_a": 0.02,
+          "coef_b": -0.45,
+          "constant": 1.25,
+          "decimals": 2,
+          "as_percent": true
+        },
+        "17": {
+          "type": "batch_stat",
+          "stat": "std_value",
+          "source_col": 11,
+          "batch_col": 0,
+          "component_cols": [
+            1,
+            2,
+            3
+          ],
+          "source_rm_col": 10,
+          "coef_a": 0.02,
+          "coef_b": -0.45,
+          "constant": 1.25,
+          "decimals": 2
+        },
+        "18": {
+          "type": "batch_brick_grade",
+          "source_col": 11,
+          "batch_col": 0,
+          "component_cols": [
+            1,
+            2,
+            3
+          ],
+          "source_rm_col": 10,
+          "coef_a": 0.02,
+          "coef_b": -0.45,
+          "constant": 1.25,
+          "min_from_all": true
+        }
+      },
+      "collect": {
+        "params": [
+          {
+            "key": "batch",
+            "label": "批次",
+            "type": "string",
+            "default": "1"
+          },
+          {
+            "key": "components",
+            "label": "构件数",
+            "type": "int",
+            "required": true,
+            "default": 10,
+            "min": 1,
+            "max": 200
+          },
+          {
+            "key": "zones_per_component",
+            "label": "每构件测区数",
+            "type": "int",
+            "required": true,
+            "default": 10,
+            "min": 1,
+            "max": 50
+          }
+        ],
+        "layout": "records",
+        "entry": "setup_dialog",
+        "importers": [
+          {
+            "kind": "excel"
+          },
+          {
+            "kind": "word_table",
+            "anchor": "砖强度检测"
+          }
+        ]
+      },
+      "equipment": [
+        "砖回弹仪"
+      ],
+      "original_record": {
+        "template": "builtin_generic"
+      },
+      "report": {
+        "chapter": "四、检测内容",
+        "result_group": "砖强度检测"
+      },
+      "skill": {
+        "slug": "brick-strength",
+        "description": "砖强度检测（回弹法） · 砖强度检测：数据采集、按规范评定、生成报告与原始记录。",
+        "when_to_use": "用户要采集、导入、评定或核对「砖强度检测」数据时。"
+      },
+      "assessment": {
+        "spec": "brick",
+        "family": "brick",
+        "input": "sheet_rows"
+      }
+    }
+  ]
+}
